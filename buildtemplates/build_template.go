@@ -1,5 +1,6 @@
 package buildtemplates
 
+//based off of https://github.com/dan-v/rattlesnakeos-stack/blob/10.0/templates/build_template.go
 const BuildTemplate = `
 #!/bin/bash
 
