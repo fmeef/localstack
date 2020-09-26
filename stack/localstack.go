@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"path"
 	"os"
+	"encoding/json"
+	"io"
+	log "github.com/sirupsen/logrus"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/api/types"
 	"github.io/gnu3ra/localstack/buildtemplates"
 	"github.io/gnu3ra/localstack/utils"
 	"github.com/jhoonb/archivex"
@@ -129,5 +133,59 @@ func (s *DockerStack) setupTmpDir() error {
 	tar.Create(path.Join(s.statePath, "build-ubuntu.tar"))
 	tar.AddAll(path.Join(s.statePath, "build-ubuntu"), true)
 	tar.Close()
+	return nil
+}
+
+func (s *DockerStack) Apply() error {
+	//TODO: deploy docker envionment
+	opt := types.ImageBuildOptions{
+		SuppressOutput: false,
+		Remove:         true,
+		ForceRemove:    true,
+		PullParent:     true,
+		Dockerfile:     "build-ubuntu/Dockerfile",
+		Tags:           []string{"rattlesnake-build-image"},
+	}
+
+	err := s.setupTmpDir()
+	if err != nil {
+		return err
+	}
+
+	buildCtx, err := os.Open(path.Join(s.statePath, "build-ubuntu.tar"))
+
+	if err != nil {
+		return fmt.Errorf("Failed to open docker build context")
+	}
+
+	defer buildCtx.Close()
+
+	response, err := s.dockerClient.ImageBuild(s.ctx, buildCtx, opt)
+
+	if err != nil {
+		return fmt.Errorf("failed to run docker build %v", err)
+	}
+
+	defer response.Body.Close()
+
+	type Stream struct {
+		Stream string `json:"stream"`
+	}
+
+	d := json.NewDecoder(response.Body)
+
+	for d.More() {
+		var v Stream
+		err = d.Decode(&v)
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Info(v.Stream)
+	}
 	return nil
 }
