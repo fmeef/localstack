@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.io/gnu3ra/localstack/stack"
+	"github.io/gnu3ra/localstack/cli"
 )
 
 func main() {
@@ -17,4 +18,5 @@ func main() {
 	}
 
 	fmt.Println("created blank dockerstack")
+	cli.Execute()
 }
