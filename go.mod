@@ -9,6 +9,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/fatih/color v1.9.0
 	github.com/jhoonb/archivex v0.0.0-20180718040744-0488e4ce1681
+	github.com/kyoh86/xdg v1.2.0
 	github.com/manifoldco/promptui v0.7.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/opencontainers/go-digest v1.0.0 // indirect

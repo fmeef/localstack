@@ -13,6 +13,7 @@ import (
 	"github.io/gnu3ra/localstack/buildtemplates"
 	"github.io/gnu3ra/localstack/utils"
 	"github.com/jhoonb/archivex"
+	"github.com/kyoh86/xdg"
 )
 
 
@@ -55,6 +56,9 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 	}
 
 	ctx := context.Background()
+
+	apiurl := fmt.Sprintf("unix:///%s/podman/podman.sock", xdg.RuntimeDir())
+	os.Setenv("DOCKER_HOST", apiurl)
 	cli, err := client.NewEnvClient()
 
 	if err != nil {
@@ -77,11 +81,11 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 func (s *DockerStack) setupTmpDir() error {
 	tar := new(archivex.TarFile)
 
-	os.MkdirAll(path.Join(s.statePath, "build-ubuntu"), os.ModeDir)
-	os.MkdirAll(path.Join(s.statePath, "mounts/script"), os.ModeDir)
-	os.MkdirAll(path.Join(s.statePath, "mounts/keys"), os.ModeDir)
-	os.MkdirAll(path.Join(s.statePath, "mounts/logs"), os.ModeDir)
-	os.MkdirAll(path.Join(s.statePath, "mounts/release"), os.ModeDir)
+	os.MkdirAll(path.Join(s.statePath, "build-ubuntu"), 0700)
+	os.MkdirAll(path.Join(s.statePath, "mounts/script"), 0700)
+	os.MkdirAll(path.Join(s.statePath, "mounts/keys"), 0700)
+	os.MkdirAll(path.Join(s.statePath, "mounts/logs"), 0700)
+	os.MkdirAll(path.Join(s.statePath, "mounts/release"), 0700)
 
 	dockerFile, err := utils.RenderTemplate(buildtemplates.DockerTemplate, s.config)
 
