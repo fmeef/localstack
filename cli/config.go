@@ -51,27 +51,6 @@ var configCmd = &cobra.Command{
 		}
 		viper.Set("device", result)
 
-		defaultLocal := "AWS"
-
-		validate = func(input string) error {
-			if input != "local" && input != "AWS" {
-				return errors.New("valid types are local or AWS only")
-			}
-			return nil
-		}
-
-		localPrompt := promptui.Prompt{
-			Label:    "Local or aws?",
-			Validate: validate,
-			Default:  defaultLocal,
-		}
-
-		result, err = localPrompt.Run()
-
-		if err != nil {
-			log.Fatalf("Prompt failed %v\n", err)
-		}
-
 		color.Cyan(fmt.Sprintln("Path to store stateful files for local stack"))
 		validate = func(input string) error {
 			fileInfo, err := os.Stat(input)
@@ -122,28 +101,6 @@ var configCmd = &cobra.Command{
 		}
 
 		viper.Set("nproc", result)
-
-		defaultKeypairName := "rattlesnakeos"
-		if viper.GetString("ssh-key") != "" {
-			defaultKeypairName = viper.GetString("ssh-key")
-		}
-		color.Cyan(fmt.Sprintln("SSH keypair name is the name of your EC2 keypair that was imported into AWS."))
-		validate = func(input string) error {
-			if len(input) < 1 {
-				return errors.New("SSH keypair name is too short")
-			}
-			return nil
-		}
-		keypairPrompt := promptui.Prompt{
-			Label:    "SSH Keypair Name ",
-			Default:  defaultKeypairName,
-			Validate: validate,
-		}
-		result, err = keypairPrompt.Run()
-		if err != nil {
-			log.Fatalf("Prompt failed %v\n", err)
-		}
-		viper.Set("ssh-key", result)
 
 		err = viper.WriteConfigAs(configFileFullPath)
 		if err != nil {
