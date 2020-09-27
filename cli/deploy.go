@@ -65,18 +65,6 @@ var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy or update the AWS infrastructure used for building RattlesnakeOS",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if viper.GetString("name") == "" {
-			return fmt.Errorf("must provide a stack name")
-		}
-		if viper.GetString("region") == "" {
-			return fmt.Errorf("must provide a region")
-		}
-		if viper.GetString("email") == "" {
-			return errors.New("must specify email")
-		}
-		if viper.GetString("ssh-key") == "" {
-			return fmt.Errorf("must provide ssh key name")
-		}
 		if viper.GetString("device") == "" {
 			return errors.New("must specify device type")
 		}
@@ -95,12 +83,6 @@ var deployCmd = &cobra.Command{
 			}
 			if chromiumMajorNumber < minimumChromiumVersion {
 				return fmt.Errorf("pinned chromium-version must have major version of at least %v", minimumChromiumVersion)
-			}
-		}
-		if viper.GetBool("attestation-server") {
-			if viper.GetString("device") != "crosshatch" && viper.GetString("device") != "blueline" &&
-				viper.GetString("device") != "sargo" && viper.GetString("device") != "bonito" {
-				return errors.New("attestation-server is only supported for pixel 3 devices")
 			}
 		}
 		if viper.GetString("force-build") != "" {
