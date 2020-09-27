@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"path"
 	"os"
-	"encoding/json"
-	"io"
 	log "github.com/sirupsen/logrus"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/api/types"
@@ -142,6 +140,7 @@ func (s *DockerStack) setupTmpDir() error {
 
 func (s *DockerStack) Apply() error {
 	//TODO: deploy docker envionment
+	log.Info("deploying docker client")
 	opt := types.ImageBuildOptions{
 		SuppressOutput: false,
 		Remove:         true,
@@ -165,31 +164,15 @@ func (s *DockerStack) Apply() error {
 	defer buildCtx.Close()
 
 	response, err := s.dockerClient.ImageBuild(s.ctx, buildCtx, opt)
+	log.Info("deploying image")
 
 	if err != nil {
 		return fmt.Errorf("failed to run docker build %v", err)
+	} else {
+		log.Info("successfully created image")
 	}
 
 	defer response.Body.Close()
 
-	type Stream struct {
-		Stream string `json:"stream"`
-	}
-
-	d := json.NewDecoder(response.Body)
-
-	for d.More() {
-		var v Stream
-		err = d.Decode(&v)
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		log.Info(v.Stream)
-	}
 	return nil
 }
