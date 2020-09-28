@@ -57,7 +57,7 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 
 	apiurl := fmt.Sprintf("unix:///%s/podman/podman.sock", xdg.RuntimeDir())
 	os.Setenv("DOCKER_HOST", apiurl)
-	os.Setenv("DOCKER_API_VERSION", "2.0.0")
+	os.Setenv("DOCKER_API_VERSION", "1.40")
 	cli, err := client.NewEnvClient()
 
 	if err != nil {
