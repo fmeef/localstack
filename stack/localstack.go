@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path"
 	"os"
+	"io"
+	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/api/types"
@@ -176,5 +178,24 @@ func (s *DockerStack) Apply() error {
 
 	defer response.Body.Close()
 
+	type Stream struct {
+		Stream string `json:"stream"`
+	}
+
+	d := json.NewDecoder(response.Body)
+
+	for d.More() {
+		var v Stream
+		err = d.Decode(&v)
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Info(v.Stream)
+	}
 	return nil
 }
