@@ -18,9 +18,43 @@ import (
 
 const minimumChromiumVersion = 80
 
+var deployCheck = func(cmd *cobra.Command, args []string) error {
+		if viper.GetString("device") == "" {
+			return errors.New("must specify device type")
+		}
+
+		if viper.GetString("device") == "marlin" || viper.GetString("device") == "sailfish" {
+			log.Warnf("WARNING: marlin/sailfish devices are no longer receiving security updates and will likely be completely deprecated in the future")
+		}
+		if viper.GetString("chromium-version") != "" {
+			chromiumVersionSplit := strings.Split(viper.GetString("chromium-version"), ".")
+			if len(chromiumVersionSplit) != 4 {
+				return errors.New("invalid chromium-version specified")
+			}
+			chromiumMajorNumber, err := strconv.Atoi(chromiumVersionSplit[0])
+			if err != nil {
+				return fmt.Errorf("unable to parse specified chromium-version: %v", err)
+			}
+			if chromiumMajorNumber < minimumChromiumVersion {
+				return fmt.Errorf("pinned chromium-version must have major version of at least %v", minimumChromiumVersion)
+			}
+		}
+
+		if device == "list" {
+			fmt.Printf("Valid devices are: %v\n", supportDevicesOutput)
+			os.Exit(0)
+		}
+		for _, device := range supportedDevicesCodename {
+			if device == viper.GetString("device") {
+				return nil
+			}
+		}
+		return fmt.Errorf("must specify a supported device: %v", strings.Join(supportedDevicesCodename, ", "))
+	}
+
 var name, region, email, device, sshKey, maxPrice, skipPrice, schedule string
 var instanceType, instanceRegions, hostsFile, chromiumVersion string
-var preventShutdown, ignoreVersionChecks, encryptedKeys, saveConfig, attestationServer bool
+var preventShutdown, encryptedKeys, saveConfig, attestationServer bool
 var patches = &utils.CustomPatches{}
 var scripts = &utils.CustomScripts{}
 var prebuilts = &utils.CustomPrebuilts{}
@@ -53,10 +87,6 @@ func init() {
 			"version of Chromium is used.")
 	viper.BindPFlag("chromium-version", flags.Lookup("chromium-version"))
 
-	flags.BoolVar(&ignoreVersionChecks, "ignore-version-checks", false,
-		"ignore the versions checks for stack, AOSP, Chromium, and F-Droid and always do a build.")
-	viper.BindPFlag("ignore-version-checks", flags.Lookup("ignore-version-checks"))
-
 	flags.BoolVar(&saveConfig, "save-config", false, "allows you to save all passed CLI flags to config file")
 }
 
@@ -64,41 +94,7 @@ func init() {
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy or update the AWS infrastructure used for building RattlesnakeOS",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if viper.GetString("device") == "" {
-			return errors.New("must specify device type")
-		}
-
-		if viper.GetString("device") == "marlin" || viper.GetString("device") == "sailfish" {
-			log.Warnf("WARNING: marlin/sailfish devices are no longer receiving security updates and will likely be completely deprecated in the future")
-		}
-		if viper.GetString("chromium-version") != "" {
-			chromiumVersionSplit := strings.Split(viper.GetString("chromium-version"), ".")
-			if len(chromiumVersionSplit) != 4 {
-				return errors.New("invalid chromium-version specified")
-			}
-			chromiumMajorNumber, err := strconv.Atoi(chromiumVersionSplit[0])
-			if err != nil {
-				return fmt.Errorf("unable to parse specified chromium-version: %v", err)
-			}
-			if chromiumMajorNumber < minimumChromiumVersion {
-				return fmt.Errorf("pinned chromium-version must have major version of at least %v", minimumChromiumVersion)
-			}
-		}
-		if viper.GetString("force-build") != "" {
-			log.Warnf("The force-build setting has been deprecated and can be removed from your config file. it has been replaced with ignore-version-checks.")
-		}
-		if device == "list" {
-			fmt.Printf("Valid devices are: %v\n", supportDevicesOutput)
-			os.Exit(0)
-		}
-		for _, device := range supportedDevicesCodename {
-			if device == viper.GetString("device") {
-				return nil
-			}
-		}
-		return fmt.Errorf("must specify a supported device: %v", strings.Join(supportedDevicesCodename, ", "))
-	},
+	Args: deployCheck,
 	Run: func(cmd *cobra.Command, args []string) {
 		viper.UnmarshalKey("custom-patches", patches)
 		viper.UnmarshalKey("custom-scripts", scripts)
@@ -153,7 +149,6 @@ var deployCmd = &cobra.Command{
 			Schedule:               viper.GetString("schedule"),
 			ChromiumVersion:        viper.GetString("chromium-version"),
 			HostsFile:              viper.GetString("hosts-file"),
-			IgnoreVersionChecks:    viper.GetBool("ignore-version-checks"),
 			CustomPatches:          patches,
 			CustomScripts:          scripts,
 			CustomPrebuilts:        prebuilts,
