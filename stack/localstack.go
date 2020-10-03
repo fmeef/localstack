@@ -12,7 +12,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/jhoonb/archivex"
-	"github.com/kyoh86/xdg"
 	log "github.com/sirupsen/logrus"
 	"github.io/gnu3ra/localstack/buildtemplates"
 	"github.io/gnu3ra/localstack/utils"
@@ -20,6 +19,7 @@ import (
 
 const (
 	imageTag = "localstack-build-image"
+	sockPath = "/tmp/localstack.sock"
 )
 
 type DockerStackConfig struct {
@@ -49,8 +49,30 @@ type DockerStack struct {
 	dockerClient *client.Client
 	ctx context.Context
 	statePath string
+	podmanProc *os.Process
 }
 
+func startPodman(sockpath string) (string, *os.Process, error) {
+
+	pathstr := fmt.Sprintf("unix://%s", path.Clean(sockpath))
+
+	var procattr os.ProcAttr
+
+	args := []string{
+		"system",
+		"service",
+		"--timeout",
+		"0",
+		pathstr,
+	}
+	proc, err := os.StartProcess("podman", args, &procattr)
+
+	if err != nil {
+		return "", nil, err
+	}
+
+	return pathstr, proc, nil
+}
 
 func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 	renderedBuildScript, err := utils.RenderTemplate(buildtemplates.BuildTemplate, config)
@@ -61,7 +83,12 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 
 	ctx := context.Background()
 
-	apiurl := fmt.Sprintf("unix:///%s/podman/podman.sock", xdg.RuntimeDir())
+	apiurl, proc, err := startPodman(sockPath)
+
+	if (err != nil) {
+		return nil, fmt.Errorf("failed to start podman daemon: %v", err)
+	}
+
 	os.Setenv("DOCKER_HOST", apiurl)
 	os.Setenv("DOCKER_API_VERSION", "1.40")
 	cli, err := client.NewEnvClient()
@@ -76,6 +103,7 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 		ctx: ctx,
 		dockerClient: cli,
 		statePath: path.Join(path.Clean(config.StatePath), ".localstack"),
+		podmanProc: proc,
 	}
 
 	return stack, nil
