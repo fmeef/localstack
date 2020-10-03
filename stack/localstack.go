@@ -2,18 +2,20 @@ package stack
 
 import (
 	"context"
-	"fmt"
-	"path"
-	"os"
-	"io"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
-	"github.com/docker/docker/client"
+	"fmt"
+	"io"
+	"os"
+	"path"
+	"strconv"
+
 	"github.com/docker/docker/api/types"
-	"github.io/gnu3ra/localstack/buildtemplates"
-	"github.io/gnu3ra/localstack/utils"
+	"github.com/docker/docker/client"
 	"github.com/jhoonb/archivex"
 	"github.com/kyoh86/xdg"
+	log "github.com/sirupsen/logrus"
+	"github.io/gnu3ra/localstack/buildtemplates"
+	"github.io/gnu3ra/localstack/utils"
 )
 
 const (
@@ -27,7 +29,6 @@ type DockerStackConfig struct {
 	SSHKey                 string
 	Version                string
 	Schedule               string
-	IgnoreVersionChecks    bool
 	ChromiumVersion        string
 	CustomPatches          *utils.CustomPatches
 	CustomScripts          *utils.CustomScripts
@@ -160,6 +161,11 @@ func (s *DockerStack) containerExists() (bool, error) {
 	}
 
 	return false, nil
+}
+
+func (s *DockerStack) Build(force bool) error {
+	args := []string{s.config.Device, strconv.FormatBool(force)}
+	return s.containerExec(args, []string{}, false, true)
 }
 
 func (s *DockerStack) containerExec(args []string, env []string, async bool, stdin bool) error {
