@@ -110,7 +110,25 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 	return stack, nil
 }
 
+func (s *DockerStack) Shutdown() error {
+	err := s.podmanProc.Signal(os.Interrupt)
 
+	if (err != nil) {
+		return fmt.Errorf("failed to signal podman process: %v", err)
+	}
+
+	state, err := s.podmanProc.Wait()
+
+	if (err != nil) {
+		return fmt.Errorf("failed to wait for podman process: %v", err)
+	}
+
+	if (!state.Exited()) {
+		return fmt.Errorf("podman process did not exit")
+	}
+
+	return nil
+}
 
 func (s *DockerStack) setupTmpDir() error {
 	tar := new(archivex.TarFile)
