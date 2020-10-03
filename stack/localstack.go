@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path"
 	"strconv"
+	"syscall"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -111,7 +112,7 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 }
 
 func (s *DockerStack) Shutdown() error {
-	err := s.podmanProc.Signal(os.Interrupt)
+	err := s.podmanProc.Signal(syscall.SIGTERM)
 
 	if (err != nil) {
 		return fmt.Errorf("failed to signal podman process: %v", err)
