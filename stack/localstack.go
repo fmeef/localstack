@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path"
 	"strconv"
 
@@ -56,8 +57,6 @@ func startPodman(sockpath string) (string, *os.Process, error) {
 
 	pathstr := fmt.Sprintf("unix://%s", path.Clean(sockpath))
 
-	var procattr os.ProcAttr
-
 	args := []string{
 		"system",
 		"service",
@@ -65,13 +64,15 @@ func startPodman(sockpath string) (string, *os.Process, error) {
 		"0",
 		pathstr,
 	}
-	proc, err := os.StartProcess("podman", args, &procattr)
+	cmd := exec.Command("podman", args...)
+
+	err := cmd.Start()
 
 	if err != nil {
 		return "", nil, err
 	}
 
-	return pathstr, proc, nil
+	return pathstr, cmd.Process, nil
 }
 
 func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
