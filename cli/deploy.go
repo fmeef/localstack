@@ -165,6 +165,11 @@ var deployCmd = &cobra.Command{
 		if err := s.Apply(); err != nil {
 			log.Fatal(err)
 		}
+
+		if err = s.Shutdown(); err != nil {
+			log.Fatalf("failed to shutdown: %v", err)
+		}
+
 		if saveConfig {
 			log.Printf("Saved settings to config file %v.", configFileFullPath)
 			err := viper.WriteConfigAs(configFileFullPath)

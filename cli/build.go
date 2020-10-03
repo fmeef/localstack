@@ -66,5 +66,11 @@ var buildCmd = &cobra.Command{
 		if (err != nil) {
 			log.Fatal(err)
 		}
+
+		err = c.Shutdown()
+
+		if (err != nil) {
+			log.Fatalf("failed to shutdown: %v", err)
+		}
 	},
 }
