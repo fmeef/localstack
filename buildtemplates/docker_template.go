@@ -64,7 +64,7 @@ USER build
 WORKDIR /build
 
 # run script from rattesnakeos-stack template
-#ENTRYPOINT [ "/bin/bash", "/script/build.sh" ]`
+ENTRYPOINT [ "/bin/bash", "/script/build.sh" ]`
 
 const ChromiumDeps = `
 #!/bin/bash
