@@ -16,6 +16,9 @@ import (
 	"github.com/kyoh86/xdg"
 )
 
+const (
+	imageTag = "localstack-build-image"
+)
 
 type DockerStackConfig struct {
 	Name                   string
@@ -141,6 +144,56 @@ func (s *DockerStack) setupTmpDir() error {
 	return nil
 }
 
+func (s *DockerStack) containerExists() (bool, error) {
+	containers, err := s.dockerClient.ContainerList(s.ctx, types.ContainerListOptions{})
+
+	if (err != nil) {
+		return false, fmt.Errorf("error, failed to list contianers: %v", err)
+	}
+
+	for _, container := range containers {
+		for _, label := range container.Labels {
+			if (label == imageTag) {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
+}
+
+func (s *DockerStack) containerExec(args []string, env []string, async bool, stdin bool) error {
+	log.Info("starting localstack build")
+
+	opts := types.ExecConfig{
+		Privileged: false,
+		AttachStderr: true,
+		AttachStdout: true,
+		AttachStdin: stdin,
+		Env: env,
+		Cmd: args,
+	}
+
+	hijackedResponse, err := s.dockerClient.ContainerExecAttach(s.ctx, imageTag, opts)
+
+	if (err != nil) {
+		return fmt.Errorf("error, ContainerExecAttach failed: %v", err)
+	}
+
+	defer hijackedResponse.Close()
+
+
+	if (stdin) {
+		go io.Copy(hijackedResponse.Conn, os.Stdin)
+	}
+
+	if (!async || stdin) {
+		io.Copy(os.Stdout, hijackedResponse.Reader)
+	}
+
+	return nil
+}
+
 func (s *DockerStack) Apply() error {
 	//TODO: deploy docker envionment
 	log.Info("deploying docker client")
@@ -150,7 +203,7 @@ func (s *DockerStack) Apply() error {
 		ForceRemove:    true,
 		PullParent:     true,
 		Dockerfile:     "build-ubuntu/Dockerfile",
-		Tags:           []string{"rattlesnake-build-image"},
+		Tags:           []string{imageTag},
 	}
 
 	err := s.setupTmpDir()
