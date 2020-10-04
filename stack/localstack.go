@@ -242,7 +242,13 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 		Cmd: args,
 	}
 
-	hijackedResponse, err := s.dockerClient.ContainerExecAttach(s.ctx, imageTag, opts)
+	resp, err := s.dockerClient.ContainerExecCreate(s.ctx, imageTag, opts)
+
+	if (err != nil) {
+		return fmt.Errorf("failed to create exec session: %v", err)
+	}
+
+	hijackedResponse, err := s.dockerClient.ContainerExecAttach(s.ctx, resp.ID, opts)
 
 	if (err != nil) {
 		return fmt.Errorf("error, ContainerExecAttach failed: %v", err)
