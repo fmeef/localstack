@@ -61,7 +61,7 @@ func blockUntilSocket(timeout int) error {
 		if os.IsExist(err) {
 			return nil
 		}
-		time.Sleep(1)
+		time.Sleep(1*time.Second)
 	}
 	return fmt.Errorf("reached timeout", )
 }
