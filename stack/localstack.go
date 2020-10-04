@@ -236,7 +236,6 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 	log.Info("starting localstack build")
 
 	opts := types.ExecConfig{
-		Privileged: false,
 		AttachStderr: true,
 		AttachStdout: true,
 		AttachStdin: stdin,
@@ -248,7 +247,6 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 	respponse, err := s.dockerClient.ContainerCreate(s.ctx, &container.Config{
 		Image: imageTag,
 		Cmd: args,
-		Tty: false,
 	}, nil, nil, containerName)
 
 	if (err != nil) {
