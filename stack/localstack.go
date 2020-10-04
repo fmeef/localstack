@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	imageTag = "localstack-build-image"
+	imageTag = "localhost/localstack-build-image"
 	sockPath = "/tmp/localstack.sock"
 )
 
