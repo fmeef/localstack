@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/jhoonb/archivex"
 	log "github.com/sirupsen/logrus"
@@ -23,6 +24,7 @@ import (
 const (
 	imageTag = "localstack-build-image"
 	sockPath = "/tmp/localstack.sock"
+	containerName = "localstack-build"
 )
 
 type DockerStackConfig struct {
@@ -242,7 +244,18 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 		Cmd: args,
 	}
 
-	resp, err := s.dockerClient.ContainerExecCreate(s.ctx, imageTag, opts)
+
+	respponse, err := s.dockerClient.ContainerCreate(s.ctx, &container.Config{
+		Image: imageTag,
+		Cmd: args,
+		Tty: false,
+	}, nil, nil, containerName)
+
+	if (err != nil) {
+		return fmt.Errorf("failed to create container: %v", err)
+	}
+
+	resp, err := s.dockerClient.ContainerExecCreate(s.ctx, respponse.ID, opts)
 
 	if (err != nil) {
 		return fmt.Errorf("failed to create exec session: %v", err)
