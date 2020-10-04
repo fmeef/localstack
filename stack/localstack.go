@@ -10,6 +10,7 @@ import (
 	"path"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -54,6 +55,17 @@ type DockerStack struct {
 	podmanProc *os.Process
 }
 
+func blockUntilSocket(timeout int) error {
+	for i := 0; i<timeout; i++ {
+		_, err := os.Stat(sockPath)
+		if os.IsExist(err) {
+			return nil
+		}
+		time.Sleep(1)
+	}
+	return fmt.Errorf("reached timeout", )
+}
+
 func startPodman(sockpath string) (string, *os.Process, error) {
 
 	pathstr := fmt.Sprintf("unix://%s", path.Clean(sockpath))
@@ -86,6 +98,8 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 	ctx := context.Background()
 
 	apiurl, proc, err := startPodman(sockPath)
+
+	blockUntilSocket(10)
 
 	if (err != nil) {
 		return nil, fmt.Errorf("failed to start podman daemon: %v", err)
