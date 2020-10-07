@@ -32,8 +32,8 @@ RUN apt-get update && apt-get install -y gawk xxd cgpt
 
 # install chromium build dependencies
 RUN apt-get update && apt-get install -y lsb-release
-COPY build-ubuntu/install-build-deps.sh install-build-deps.sh
-COPY build-ubuntu/install-build-deps-android.sh install-build-deps-android.sh
+COPY install-build-deps.sh install-build-deps.sh
+COPY install-build-deps-android.sh install-build-deps-android.sh
 
 RUN chmod +x install-build-deps.sh
 RUN chmod +x install-build-deps-android.sh
