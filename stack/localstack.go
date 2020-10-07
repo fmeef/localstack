@@ -251,6 +251,7 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 	}
 
 	if len(containerList) == 0 {
+		log.Info("Starting container")
 		spec := specgen.NewSpecGenerator(imageTag, false)
 
 		spec.Terminal = true
@@ -276,54 +277,9 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 		if err != nil {
 			return fmt.Errorf("failed to wait for container: %v", err)
 		}
+	} else {
+		log.Info("Container already started")
 	}
-
-
-	/*
-	opts := types.ExecConfig{
-		AttachStderr: true,
-		AttachStdout: true,
-		AttachStdin: stdin,
-		Env: env,
-		Cmd: args,
-	}
-
-
-	s := specgen.NewSpecGenerator(ta)
-
-	respponse, err := s.dockerClient.ContainerCreate(s.ctx, &container.Config{
-		Image: imageTag,
-		Cmd: args,
-	}, nil, nil, containerName)
-
-	if (err != nil) {
-		return fmt.Errorf("failed to create container: %v", err)
-	}
-
-	resp, err := s.dockerClient.ContainerExecCreate(s.ctx, respponse.ID, opts)
-
-	if (err != nil) {
-		return fmt.Errorf("failed to create exec session: %v", err)
-	}
-
-	hijackedResponse, err := s.dockerClient.ContainerExecAttach(s.ctx, resp.ID, opts)
-
-	if (err != nil) {
-		return fmt.Errorf("error, ContainerExecAttach failed: %v", err)
-	}
-
-	defer hijackedResponse.Close()
-
-
-	if (stdin) {
-		go io.Copy(hijackedResponse.Conn, os.Stdin)
-	}
-
-	if (!async || stdin) {
-		io.Copy(os.Stdout, hijackedResponse.Reader)
-	}
-
-	*/
 	return nil
 }
 
