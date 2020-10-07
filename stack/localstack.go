@@ -330,7 +330,7 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 func (s *DockerStack) Apply() error {
 	//TODO: deploy docker envionment
 	log.Info("deploying docker client")
-
+	s.setupTmpDir()
 	commonOpts := buildah.CommonBuildOptions{
 		//TODO: volumes
 	}
