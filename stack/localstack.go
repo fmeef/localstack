@@ -244,34 +244,35 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 	}
 
 	if exist {
-		log.Info("Starting container")
-		spec := specgen.NewSpecGenerator(imageTag, false)
+		var volume = false
+		containers.Remove(s.ctx, containerName, nil, &volume)
+	}
 
-		spec.Terminal = true
-		spec.Name = containerName
+	log.Info("Starting container")
+	spec := specgen.NewSpecGenerator(imageTag, false)
 
-		resp, err := containers.CreateWithSpec(s.ctx, spec)
+	spec.Terminal = true
+	spec.Name = containerName
 
-		if err != nil {
-			return fmt.Errorf("error creating container: %v", err)
-		}
+	resp, err := containers.CreateWithSpec(s.ctx, spec)
+
+	if err != nil {
+		return fmt.Errorf("error creating container: %v", err)
+	}
 
 
-		err = containers.Start(s.ctx, resp.ID, nil)
+	err = containers.Start(s.ctx, resp.ID, nil)
 
-		if err != nil {
-			return fmt.Errorf("failed to start container: %v", err)
-		}
+	if err != nil {
+		return fmt.Errorf("failed to start container: %v", err)
+	}
 
-		running := define.ContainerStateRunning
+	running := define.ContainerStateRunning
 
-		_, err = containers.Wait(s.ctx, resp.ID, &running)
+	_, err = containers.Wait(s.ctx, resp.ID, &running)
 
-		if err != nil {
-			return fmt.Errorf("failed to wait for container: %v", err)
-		}
-	} else {
-		log.Info("Container already started")
+	if err != nil {
+		return fmt.Errorf("failed to wait for container: %v", err)
 	}
 
 	opts := handlers.ExecCreateConfig{
