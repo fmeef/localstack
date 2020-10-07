@@ -213,22 +213,17 @@ func (s *DockerStack) setupTmpDir() error {
 }
 
 func (s *DockerStack) containerExists() (bool, error) {
-	/*
-	containers, err := s.dockerClient.ContainerList(s.ctx, types.ContainerListOptions{})
+	filters := make(map[string][]string)
 
-	if (err != nil) {
-		return false, fmt.Errorf("error, failed to list contianers: %v", err)
-	}
+	filters["name"] = []string{containerName}
 
-	for _, container := range containers {
-		for _, label := range container.Labels {
-			if (label == imageTag) {
-				return true, nil
-			}
-		}
+
+	containerList, err := containers.List(s.ctx, filters, nil, nil, nil, nil)
+
+	if err != nil {
+		return false, fmt.Errorf("failed to list containers: %v", err)
 	}
-*/
-	return false, nil
+	return len(containerList) == 0, nil
 }
 
 func (s *DockerStack) Build(force bool) error {
@@ -239,18 +234,13 @@ func (s *DockerStack) Build(force bool) error {
 func (s *DockerStack) containerExec(args []string, env []string, async bool, stdin bool) error {
 	log.Info("starting localstack build")
 
-	filters := make(map[string][]string)
-
-	filters["name"] = []string{containerName}
-
-
-	containerList, err := containers.List(s.ctx, filters, nil, nil, nil, nil)
+	exist, err := s.containerExists()
 
 	if err != nil {
-		return fmt.Errorf("failed to list containers: %v", err)
+		return err
 	}
 
-	if len(containerList) == 0 {
+	if exist {
 		log.Info("Starting container")
 		spec := specgen.NewSpecGenerator(imageTag, false)
 
