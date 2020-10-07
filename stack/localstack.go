@@ -1,6 +1,7 @@
 package stack
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -13,12 +14,14 @@ import (
 	"github.com/containers/buildah"
 	"github.com/containers/buildah/imagebuildah"
 	"github.com/containers/podman/v2/libpod/define"
+	"github.com/containers/podman/v2/pkg/api/handlers"
 	"github.com/containers/podman/v2/pkg/bindings"
 	"github.com/containers/podman/v2/pkg/bindings/containers"
 	"github.com/containers/podman/v2/pkg/bindings/images"
 	"github.com/containers/podman/v2/pkg/domain/entities"
 	"github.com/containers/podman/v2/pkg/specgen"
 	"github.com/containers/storage/pkg/archive"
+	"github.com/docker/docker/api/types"
 	"github.com/jhoonb/archivex"
 	log "github.com/sirupsen/logrus"
 	"github.io/gnu3ra/localstack/buildtemplates"
@@ -270,6 +273,39 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 	} else {
 		log.Info("Container already started")
 	}
+
+	opts := handlers.ExecCreateConfig{
+		types.ExecConfig{
+			AttachStderr: true,
+			AttachStdout: true,
+			AttachStdin: true,
+			Env: env,
+			Cmd: args,
+		},
+	}
+
+	exec, err := containers.ExecCreate(s.ctx, containerName, &opts)
+
+	if err != nil {
+		return fmt.Errorf("ExecCreate failed: %v", err)
+	}
+
+
+	attachopts := define.AttachStreams{
+		OutputStream: os.Stdout,
+		ErrorStream: os.Stderr,
+		InputStream: bufio.NewReader(os.Stdin),
+		AttachOutput: true,
+		AttachError: true,
+		AttachInput: true,
+	}
+
+	err = containers.ExecStartAndAttach(s.ctx, exec, &attachopts)
+
+	if err != nil {
+		return fmt.Errorf("Failed to attach to container: %v", err)
+	}
+
 	return nil
 }
 

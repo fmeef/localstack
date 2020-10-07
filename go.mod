@@ -8,6 +8,7 @@ require (
 	github.com/containers/libpod v1.9.3
 	github.com/containers/podman/v2 v2.1.1
 	github.com/containers/storage v1.23.5
+	github.com/docker/docker v17.12.0-ce-rc1.0.20200917150144-3956a86b6235+incompatible
 	github.com/fatih/color v1.9.0
 	github.com/jhoonb/archivex v0.0.0-20180718040744-0488e4ce1681
 	github.com/manifoldco/promptui v0.8.0
