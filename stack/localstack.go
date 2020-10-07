@@ -12,9 +12,12 @@ import (
 
 	"github.com/containers/buildah"
 	"github.com/containers/buildah/imagebuildah"
+	"github.com/containers/podman/v2/libpod/define"
 	"github.com/containers/podman/v2/pkg/bindings"
+	"github.com/containers/podman/v2/pkg/bindings/containers"
 	"github.com/containers/podman/v2/pkg/bindings/images"
 	"github.com/containers/podman/v2/pkg/domain/entities"
+	"github.com/containers/podman/v2/pkg/specgen"
 	"github.com/containers/storage/pkg/archive"
 	"github.com/jhoonb/archivex"
 	log "github.com/sirupsen/logrus"
@@ -235,6 +238,47 @@ func (s *DockerStack) Build(force bool) error {
 
 func (s *DockerStack) containerExec(args []string, env []string, async bool, stdin bool) error {
 	log.Info("starting localstack build")
+
+	filters := make(map[string][]string)
+
+	filters["name"] = []string{containerName}
+
+
+	containerList, err := containers.List(s.ctx, filters, nil, nil, nil, nil)
+
+	if err != nil {
+		return fmt.Errorf("failed to list containers: %v", err)
+	}
+
+	if len(containerList) == 0 {
+		spec := specgen.NewSpecGenerator(imageTag, false)
+
+		spec.Terminal = true
+		spec.Name = containerName
+
+		resp, err := containers.CreateWithSpec(s.ctx, spec)
+
+		if err != nil {
+			return fmt.Errorf("error creating container: %v", err)
+		}
+
+
+		err = containers.Start(s.ctx, resp.ID, nil)
+
+		if err != nil {
+			return fmt.Errorf("failed to start container: %v", err)
+		}
+
+		running := define.ContainerStateRunning
+
+		_, err = containers.Wait(s.ctx, resp.ID, &running)
+
+		if err != nil {
+			return fmt.Errorf("failed to wait for container: %v", err)
+		}
+	}
+
+
 	/*
 	opts := types.ExecConfig{
 		AttachStderr: true,
