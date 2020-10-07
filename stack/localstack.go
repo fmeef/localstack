@@ -2,9 +2,7 @@ package stack
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -12,9 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	"github.com/containers/buildah"
+	"github.com/containers/buildah/imagebuildah"
+	"github.com/containers/podman/v2/pkg/bindings"
+	"github.com/containers/podman/v2/pkg/bindings/images"
+	"github.com/containers/podman/v2/pkg/domain/entities"
+	"github.com/containers/storage/pkg/archive"
 	"github.com/jhoonb/archivex"
 	log "github.com/sirupsen/logrus"
 	"github.io/gnu3ra/localstack/buildtemplates"
@@ -51,10 +52,10 @@ type DockerStack struct {
 	config *DockerStackConfig
 	renderedBuildScript []byte
 	buildScriptFileLocation string
-	dockerClient *client.Client
 	ctx context.Context
 	statePath string
 	podmanProc *os.Process
+	renderedDockerFile []byte
 }
 
 func blockUntilSocket(timeout int) error {
@@ -94,6 +95,11 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 	renderedBuildScript, err := utils.RenderTemplate(buildtemplates.BuildTemplate, config)
 
 	if err != nil {
+		return nil, fmt.Errorf("failed to render dockerfile: $v", err)
+	}
+
+	dockerFile, err := utils.RenderTemplate(buildtemplates.DockerTemplate, config)
+	if err != nil {
 		return nil, fmt.Errorf("Failed to render build script %v", err)
 	}
 
@@ -109,7 +115,7 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 
 	os.Setenv("DOCKER_HOST", apiurl)
 	os.Setenv("DOCKER_API_VERSION", "1.40")
-	cli, err := client.NewEnvClient()
+	cli, err := bindings.NewConnection(ctx, apiurl)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create docker api client: %v", err)
@@ -118,10 +124,10 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 	stack := &DockerStack{
 		config:	config,
 		renderedBuildScript: renderedBuildScript,
-		ctx: ctx,
-		dockerClient: cli,
+		ctx: cli,
 		statePath: path.Join(path.Clean(config.StatePath), ".localstack"),
 		podmanProc: proc,
+		renderedDockerFile: dockerFile,
 	}
 
 	return stack, nil
@@ -156,12 +162,6 @@ func (s *DockerStack) setupTmpDir() error {
 	os.MkdirAll(path.Join(s.statePath, "mounts/logs"), 0700)
 	os.MkdirAll(path.Join(s.statePath, "mounts/release"), 0700)
 
-	dockerFile, err := utils.RenderTemplate(buildtemplates.DockerTemplate, s.config)
-
-	if err != nil {
-		return fmt.Errorf("failed to render docker template: %v", err)
-	}
-
 	ibd, err := os.Create(path.Join(s.statePath, "build-ubuntu/install-build-deps.sh"))
 
 	if err != nil {
@@ -189,7 +189,7 @@ func (s *DockerStack) setupTmpDir() error {
 	if err != nil {
 		return fmt.Errorf("failed to write dockerfile")
 	}
-	df.Write(dockerFile)
+	df.Write(s.renderedDockerFile)
 	df.Sync()
 
 	defer df.Close()
@@ -210,6 +210,7 @@ func (s *DockerStack) setupTmpDir() error {
 }
 
 func (s *DockerStack) containerExists() (bool, error) {
+	/*
 	containers, err := s.dockerClient.ContainerList(s.ctx, types.ContainerListOptions{})
 
 	if (err != nil) {
@@ -223,7 +224,7 @@ func (s *DockerStack) containerExists() (bool, error) {
 			}
 		}
 	}
-
+*/
 	return false, nil
 }
 
@@ -234,7 +235,7 @@ func (s *DockerStack) Build(force bool) error {
 
 func (s *DockerStack) containerExec(args []string, env []string, async bool, stdin bool) error {
 	log.Info("starting localstack build")
-
+	/*
 	opts := types.ExecConfig{
 		AttachStderr: true,
 		AttachStdout: true,
@@ -243,6 +244,8 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 		Cmd: args,
 	}
 
+
+	s := specgen.NewSpecGenerator(ta)
 
 	respponse, err := s.dockerClient.ContainerCreate(s.ctx, &container.Config{
 		Image: imageTag,
@@ -276,64 +279,42 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 		io.Copy(os.Stdout, hijackedResponse.Reader)
 	}
 
+	*/
 	return nil
 }
 
 func (s *DockerStack) Apply() error {
 	//TODO: deploy docker envionment
 	log.Info("deploying docker client")
-	opt := types.ImageBuildOptions{
-		SuppressOutput: false,
-		Remove:         true,
-		ForceRemove:    true,
-		PullParent:     true,
-		Dockerfile:     "build-ubuntu/Dockerfile",
-		Tags:           []string{imageTag},
+
+	commonOpts := buildah.CommonBuildOptions{
+		//TODO: volumes
 	}
 
-	err := s.setupTmpDir()
+	imageBuildah := imagebuildah.BuildOptions{
+		ContextDirectory: path.Join(s.statePath, "build-ubuntu"),
+		PullPolicy: buildah.PullAlways,
+		Quiet: false,
+		Isolation: buildah.IsolationOCIRootless,
+		Compression: archive.Gzip,
+		Output: imageTag,
+		Log: log.Infof,
+		In: os.Stdin,
+		Out: os.Stdout,
+		ReportWriter: os.Stdout,
+		CommonBuildOpts: &commonOpts,
+	}
+
+	buildoptions := entities.BuildOptions{
+		imageBuildah,
+	}
+
+	containerfile := []string{path.Join(s.statePath, "build-ubuntu/Dockerfile")}
+
+	_, err := images.Build(s.ctx, containerfile, buildoptions)
 
 	if err != nil {
-		return err
-	}
-
-	buildCtx, err := os.Open(path.Join(s.statePath, "build-ubuntu.tar"))
-
-	if err != nil {
-		return fmt.Errorf("Failed to open docker build context")
-	}
-
-	defer buildCtx.Close()
-
-	response, err := s.dockerClient.ImageBuild(s.ctx, buildCtx, opt)
-	log.Info("deploying image")
-
-	if err != nil {
-		return fmt.Errorf("failed to run docker build %v", err)
-	} else {
-		log.Info("successfully created image")
-	}
-
-	defer response.Body.Close()
-
-	type Stream struct {
-		Stream string `json:"stream"`
-	}
-
-	d := json.NewDecoder(response.Body)
-
-	for d.More() {
-		var v Stream
-		err = d.Decode(&v)
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		log.Info(v.Stream)
+		return fmt.Errorf("failed to build image: %v", err)
 	}
 	return nil
 }
