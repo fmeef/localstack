@@ -18,12 +18,13 @@ RUN apt-get update && \
       git-core g++-multilib gnupg gperf jq lib32ncurses5-dev lib32z1-dev\
       lib32z-dev libbz2-dev libc6-dev-i386 libffi-dev libghc-bzlib-dev\
       libgl1-mesa-dev libjpeg8-dev liblz4-tool libssl-dev libx11-dev\
-      libxml2-dev libxml2-utils libxslt1-dev lzop openjdk-8-jdk\
+      libxml2-dev libxml2-utils libxslt1-dev lzop\
       openssh-server optipng pngcrush pxz python-dev python-networkx\
       python-pip repo squashfs-tools unzip x11proto-core-dev xsltproc\
       zip zlib1g-dev rsync sudo python-protobuf&& \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+RUN sudo add-apt-repository ppa:openjdk-r/ppa && apt update && apt install openjdk-11-jdk
 
 #replace awk with gnu awk
 RUN apt-get update && apt-get install -y gawk xxd cgpt
@@ -44,8 +45,6 @@ RUN groupadd -g $GID -o build
 RUN useradd -G plugdev,sudo -g $GID -u $UID -d $HOME -ms /bin/bash build
 
 RUN sed -i /etc/sudoers -re 's/^%sudo.*/%sudo ALL=(ALL:ALL) NOPASSWD: ALL/g'
-RUN update-java-alternatives --jre-headless --jre --set java-1.8.0-openjdk-amd64
-RUN update-java-alternatives --set java-1.8.0-openjdk-amd64
 RUN pip install awscli
 
 RUN systemctl enable ssh
