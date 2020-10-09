@@ -9,11 +9,13 @@ import (
 type CustomPatches []struct {
 	Repo    string
 	Patches []string
+	Branch 	string
 }
 
 type CustomScripts []struct {
 	Repo    string
 	Scripts []string
+	Branch 	string
 }
 
 type CustomPrebuilts []struct {
