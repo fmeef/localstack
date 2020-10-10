@@ -21,6 +21,8 @@ import (
 	"github.com/containers/podman/v2/pkg/domain/entities"
 	"github.com/containers/podman/v2/pkg/specgen"
 	"github.com/containers/storage/pkg/archive"
+	"github.com/opencontainers/runtime-spec/specs-go"
+
 	"github.com/docker/docker/api/types"
 	"github.com/jhoonb/archivex"
 	log "github.com/sirupsen/logrus"
@@ -60,6 +62,11 @@ type DockerStack struct {
 	buildScriptFileLocation string
 	ctx context.Context
 	statePath string
+	scriptPath string
+	keysPath string
+	logsPath string
+	buildPath string
+	releasePath string
 	podmanProc *os.Process
 	renderedDockerFile []byte
 }
@@ -126,14 +133,19 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create docker api client: %v", err)
 	}
-
+	statepath := path.Join(path.Clean(config.StatePath), ".localstack")
 	stack := &DockerStack{
 		config:	config,
 		renderedBuildScript: renderedBuildScript,
 		ctx: cli,
-		statePath: path.Join(path.Clean(config.StatePath), ".localstack"),
+		statePath: statepath,
 		podmanProc: proc,
 		renderedDockerFile: dockerFile,
+		scriptPath: path.Join(statepath, "mounts/script"),
+		keysPath: path.Join(statepath, "mounts/keys"),
+		logsPath: path.Join(statepath, "mounts/logs"),
+		releasePath: path.Join(statepath, "mounts/release"),
+		buildPath: path.Join(statepath, "build-ubuntu"),
 	}
 
 	return stack, nil
@@ -162,11 +174,11 @@ func (s *DockerStack) Shutdown() error {
 func (s *DockerStack) setupTmpDir() error {
 	tar := new(archivex.TarFile)
 
-	os.MkdirAll(path.Join(s.statePath, "build-ubuntu"), 0700)
-	os.MkdirAll(path.Join(s.statePath, "mounts/script"), 0700)
-	os.MkdirAll(path.Join(s.statePath, "mounts/keys"), 0700)
-	os.MkdirAll(path.Join(s.statePath, "mounts/logs"), 0700)
-	os.MkdirAll(path.Join(s.statePath, "mounts/release"), 0700)
+	os.MkdirAll(s.buildPath, 0700)
+	os.MkdirAll(s.scriptPath, 0700)
+	os.MkdirAll(s.keysPath, 0700)
+	os.MkdirAll(s.logsPath, 0700)
+	os.MkdirAll(s.releasePath, 0700)
 
 	ibd, err := os.Create(path.Join(s.statePath, "build-ubuntu/install-build-deps.sh"))
 
@@ -251,15 +263,39 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 	log.Info("Starting container")
 	spec := specgen.NewSpecGenerator(imageTag, false)
 
+	buildvolume := specs.Mount{
+		Destination: "/build",
+		Source: "testbuild",
+		Type: "volume",
+	}
+
+	scriptmount := specs.Mount{
+		Destination: "/script",
+		Source: s.scriptPath,
+		Type: "bind",
+	}
+
+	keysmount := specs.Mount{
+		Destination: "/keys",
+		Source: s.keysPath,
+		Type: "bind",
+	}
+
+	releasemount := specs.Mount{
+		Destination: "/release",
+		Source: s.releasePath,
+		Type: "bind",
+	}
+
 	spec.Terminal = true
 	spec.Name = containerName
+	spec.Mounts = []specs.Mount{buildvolume, scriptmount, keysmount, releasemount}
 
 	resp, err := containers.CreateWithSpec(s.ctx, spec)
 
 	if err != nil {
 		return fmt.Errorf("error creating container: %v", err)
 	}
-
 
 	err = containers.Start(s.ctx, resp.ID, nil)
 
