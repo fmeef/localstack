@@ -13,6 +13,7 @@ import (
 
 	"github.com/containers/buildah"
 	"github.com/containers/buildah/imagebuildah"
+	"github.com/containers/podman/v2/pkg/bindings/volumes"
 	"github.com/containers/podman/v2/libpod/define"
 	"github.com/containers/podman/v2/pkg/api/handlers"
 	"github.com/containers/podman/v2/pkg/bindings"
@@ -34,6 +35,7 @@ const (
 	imageTag = "localstack-build-image"
 	sockPath = "/tmp/localstack.sock"
 	containerName = "localstack-build"
+	buildVolumeName = "localstack-build"
 )
 
 type DockerStackConfig struct {
@@ -246,8 +248,30 @@ func (s *DockerStack) Build(force bool) error {
 	return s.containerExec(args, []string{}, false, true)
 }
 
+func (s *DockerStack) setupVolumes() error {
+	resp, err := volumes.Inspect(s.ctx, buildVolumeName)
+
+	if err != nil {
+		return fmt.Errorf("failed to get volume: %v", err)
+	}
+
+	if resp != nil {
+		volumes.Create(s.ctx, entities.VolumeCreateOptions{
+			Name: buildVolumeName,
+		})
+	}
+	return nil
+}
+
 func (s *DockerStack) containerExec(args []string, env []string, async bool, stdin bool) error {
 	log.Info("starting localstack build")
+
+
+	err := s.setupVolumes()
+
+	if err != nil {
+		return fmt.Errorf("failed to setup build volume: %v", err)
+	}
 
 	exist, err := s.containerExists()
 
