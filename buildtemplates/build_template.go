@@ -212,12 +212,13 @@ check_for_new_versions() {
     log "Setting LATEST_CHROMIUM to pinned version ${CHROMIUM_PINNED_VERSION}"
     LATEST_CHROMIUM="${CHROMIUM_PINNED_VERSION}"
   fi
-  existing_chromium=$(cat ${AWS_RELEASE_BUCKET}/chromium/revision || echo "")
-  chromium_included=$(cat ${AWS_RELEASE_BUCKET}/chromium/included || echo "")
+  existing_chromium=$(cat ${AWS_RELEASE_BUCKET}/chromium/revision 2>/dev/null || echo "")
+  chromium_included=$(cat ${AWS_RELEASE_BUCKET}/chromium/included 2>/dev/null|| echo "")
   if [ "${existing_chromium}" == "${LATEST_CHROMIUM}" ] && [ "${chromium_included}" == "yes" ]; then
     log "Chromium build (${existing_chromium}) is up to date"
   else
     log "Chromium needs to be updated to ${LATEST_CHROMIUM}"
+    mkdir -p ${AWS_RELEASE_BUCKET}/chromium
     echo "no" > ${AWS_RELEASE_BUCKET}/chromium/included
     needs_update=true
     if [ "${existing_chromium}" == "${LATEST_CHROMIUM}" ]; then
@@ -228,7 +229,7 @@ check_for_new_versions() {
   fi
 
   # check fdroid
-  existing_fdroid_client=$(cat ${AWS_RELEASE_BUCKET}/fdroid/revision || echo "")
+  existing_fdroid_client=$(cat ${AWS_RELEASE_BUCKET}/fdroid/revision 2>/dev/null || echo "")
   if [ "${existing_fdroid_client}" == "${FDROID_CLIENT_VERSION}" ]; then
     log "F-Droid build (${existing_fdroid_client}) is up to date"
   else
@@ -238,7 +239,7 @@ check_for_new_versions() {
   fi
 
   # check fdroid priv extension
-  existing_fdroid_priv_version=$(cat ${AWS_RELEASE_BUCKET}/fdroid-priv/revision || echo "")
+  existing_fdroid_priv_version=$(cat ${AWS_RELEASE_BUCKET}/fdroid-priv/revision 2>/dev/null || echo "")
   if [ "${existing_fdroid_priv_version}" == "${FDROID_PRIV_EXT_VERSION}" ]; then
     log "F-Droid privileged extension build (${existing_fdroid_priv_version}) is up to date"
   else
@@ -354,7 +355,7 @@ setup_env() {
 check_chromium() {
   log_header "${FUNCNAME[0]}"
 
-  current=$(cat ${AWS_RELEASE_BUCKET}/chromium/revision || echo "")
+  current=$(cat ${AWS_RELEASE_BUCKET}/chromium/revision 2>/dev/null || echo "")
   log "Chromium current: ${current}"
 
   log "Chromium latest: ${LATEST_CHROMIUM}"
@@ -1113,9 +1114,12 @@ checkpoint_versions() {
   log_header "${FUNCNAME[0]}"
 
   # checkpoint stack version
+  mkdir -p ${AWS_RELEASE_BUCKET}/rattlesnakeos-stack
   echo "${STACK_VERSION}" > ${AWS_RELEASE_BUCKET}/rattlesnakeos-stack/revision
 
   # checkpoint f-droid
+  mkdir -p ${AWS_RELEASE_BUCKET}/fdroid
+  mkdir -p ${AWS_RELEASE_BUCKET}/fdroid-priv
   echo "${FDROID_PRIV_EXT_VERSION}" > ${AWS_RELEASE_BUCKET}/fdroid-priv/revision
   echo "${FDROID_CLIENT_VERSION}" > ${AWS_RELEASE_BUCKET}/fdroid/revision
 
@@ -1123,6 +1127,7 @@ checkpoint_versions() {
   ${AWS_RELEASE_BUCKET}/${DEVICE}-vendor <<< ${AOSP_VENDOR_BUILD} || true
 
   # checkpoint chromium
+  mkdir -p ${AWS_RELEASE_BUCKET}/chromium
   echo yes > ${AWS_RELEASE_BUCKET}/chromium/included
 }
 
