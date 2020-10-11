@@ -55,6 +55,8 @@ type DockerStackConfig struct {
 	EnableAttestation      bool
 	StatePath              string
 	NumProc                int
+	Uid					   string
+	Gid					   string
 }
 
 

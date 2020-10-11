@@ -4,10 +4,12 @@ const DockerTemplate = `FROM ubuntu:18.04
 
 MAINTAINER Alex Ballmer <gnu3ra@riseup.net>
 
-ENV HOME=/root
-ENV PATH=/root/scripts:/root/out/host/linux-x86/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV HOME=/build
+ENV PATH=/build/scripts:/build/out/host/linux-x86/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG UID=<% .Uid %>
+ARG GID=<% .Gid %>
 
 # install build dependencies
 RUN apt-get update && \
@@ -32,12 +34,19 @@ RUN chmod +x install-build-deps-android.sh
 
 RUN /bin/bash install-build-deps-android.sh --no-prompt
 
+RUN groupadd -g $GID -o build
+RUN useradd -G plugdev,sudo -g $GID -u $UID -d $HOME -ms /bin/bash build
+
+RUN sed -i /etc/sudoers -re 's/^%sudo.*/%sudo ALL=(ALL:ALL) NOPASSWD: ALL/g'
+
 RUN mkdir -p /script /keys /release /logs
 
 # mount volume to store source tree
-VOLUME ["/root"]
+VOLUME ["/build"]
 
-WORKDIR /root
+USER build
+
+WORKDIR /build
 `
 
 const ChromiumDeps = `

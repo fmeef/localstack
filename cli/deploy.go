@@ -6,12 +6,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"github.io/gnu3ra/localstack/stack"
-	"github.io/gnu3ra/localstack/utils"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	osuser "os/user"
 	"github.com/manifoldco/promptui"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.io/gnu3ra/localstack/stack"
+	"github.io/gnu3ra/localstack/utils"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -141,6 +142,13 @@ var deployCmd = &cobra.Command{
 			log.Fatalf("Exiting %v", err)
 		}
 
+		u, err := osuser.Current()
+
+		if err != nil {
+			log.Fatalf("failed to get user: %v", err)
+			return
+		}
+
 		s, err := stack.NewDockerStack(&stack.DockerStackConfig{
 			Name:                   viper.GetString("name"),
 			Device:                 viper.GetString("device"),
@@ -158,6 +166,8 @@ var deployCmd = &cobra.Command{
 			EnableAttestation:      viper.GetBool("attestation-server"),
 			StatePath:              viper.GetString("statepath"),
 			NumProc:                viper.GetInt("nproc"),
+			Uid: 					u.Uid,
+			Gid:					u.Gid,
 		})
 		if err != nil {
 			log.Fatal(err)
