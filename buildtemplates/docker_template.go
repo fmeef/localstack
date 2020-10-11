@@ -61,9 +61,7 @@ VOLUME ["/build"]
 # create new user with home in our volume
 USER build
 WORKDIR /build
-
-# run script from rattesnakeos-stack template
-CMD [ "/bin/bash", "/script/build.sh" ]`
+`
 
 const ChromiumDeps = `
 #!/bin/bash
