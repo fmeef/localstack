@@ -330,6 +330,7 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 	}
 
 	spec.PidNS = ns
+	spec.CgroupNS = ns
 
 	resp, err := containers.CreateWithSpec(s.ctx, spec)
 
