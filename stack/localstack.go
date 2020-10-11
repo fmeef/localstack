@@ -251,15 +251,16 @@ func (s *DockerStack) Build(force bool) error {
 func (s *DockerStack) setupVolumes() error {
 	resp, err := volumes.Inspect(s.ctx, buildVolumeName)
 
-	if err != nil {
-		return fmt.Errorf("failed to get volume: %v", err)
-	}
-
-	if resp != nil {
-		volumes.Create(s.ctx, entities.VolumeCreateOptions{
+	if err != nil || resp == nil {
+		_, err := volumes.Create(s.ctx, entities.VolumeCreateOptions{
 			Name: buildVolumeName,
 		})
+
+		if err != nil {
+			return fmt.Errorf("Error, failed to create volume %v", err)
+		}
 	}
+
 	return nil
 }
 
