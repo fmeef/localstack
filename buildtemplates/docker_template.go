@@ -21,7 +21,7 @@ RUN apt-get update && \
       libxml2-dev libxml2-utils libxslt1-dev lzop\
       openssh-server optipng pngcrush pxz python-dev python-networkx\
       python-pip repo squashfs-tools unzip x11proto-core-dev xsltproc\
-      zip zlib1g-dev rsync sudo python-protobuf&& \
+      zip zlib1g-dev rsync sudo python-protobuf software-properties-common && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN sudo add-apt-repository ppa:openjdk-r/ppa && apt update && apt install openjdk-11-jdk
