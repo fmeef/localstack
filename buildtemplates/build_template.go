@@ -66,9 +66,6 @@ STACK_NAME=<% .Name %>
 # version of stack running
 STACK_VERSION=<% .Version %>
 
-# prevent default action of shutting down on exit
-PREVENT_SHUTDOWN=<% .PreventShutdown %>
-
 # whether version checks should be ignored
 IGNORE_VERSION_CHECKS=<% .IgnoreVersionChecks %>
 
