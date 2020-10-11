@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"syscall"
 	"time"
-	localuser "os/user"
 
 	"github.com/containers/buildah"
 	"github.com/containers/buildah/imagebuildah"
@@ -312,25 +311,10 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 		Dest: "/build",
 	}
 
-	u, err := localuser.Current()
-
-	if err != nil {
-		return fmt.Errorf("failed to lookup curent user: %v", err)
-	}
-
-	spec.User = u.Uid
-
 	spec.Terminal = true
 	spec.Name = containerName
 	spec.Volumes = []*specgen.NamedVolume{&vols}
 	spec.Mounts = []specs.Mount{scriptmount, keysmount, releasemount}
-	ns, err := specgen.ParseNamespace("host")
-	if err != nil {
-		return fmt.Errorf("failed to parse namespace: %v (this should not happen)", err)
-	}
-
-	spec.PidNS = ns
-	spec.CgroupNS = ns
 
 	resp, err := containers.CreateWithSpec(s.ctx, spec)
 
