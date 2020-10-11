@@ -69,11 +69,6 @@ STACK_VERSION=<% .Version %>
 # version of chromium to pin to if requested
 CHROMIUM_PINNED_VERSION=<% .ChromiumVersion %>
 
-# whether keys are client side encrypted or not
-ENCRYPTED_KEYS="<% .EncryptedKeys %>"
-ENCRYPTION_KEY=
-ENCRYPTION_PIPE="/tmp/key"
-
 # pin to specific version of android
 ANDROID_VERSION="11.0"
 
