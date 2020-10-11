@@ -10,15 +10,16 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+	localuser "os/user"
 
 	"github.com/containers/buildah"
 	"github.com/containers/buildah/imagebuildah"
-	"github.com/containers/podman/v2/pkg/bindings/volumes"
 	"github.com/containers/podman/v2/libpod/define"
 	"github.com/containers/podman/v2/pkg/api/handlers"
 	"github.com/containers/podman/v2/pkg/bindings"
 	"github.com/containers/podman/v2/pkg/bindings/containers"
 	"github.com/containers/podman/v2/pkg/bindings/images"
+	"github.com/containers/podman/v2/pkg/bindings/volumes"
 	"github.com/containers/podman/v2/pkg/domain/entities"
 	"github.com/containers/podman/v2/pkg/specgen"
 	"github.com/containers/storage/pkg/archive"
@@ -310,6 +311,14 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 		Name: buildVolumeName,
 		Dest: "/build",
 	}
+
+	u, err := localuser.Current()
+
+	if err != nil {
+		return fmt.Errorf("failed to lookup curent user: %v", err)
+	}
+
+	spec.User = u.Uid
 
 	spec.Terminal = true
 	spec.Name = containerName
