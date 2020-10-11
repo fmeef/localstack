@@ -24,7 +24,7 @@ RUN apt-get update && \
       zip zlib1g-dev rsync sudo python-protobuf software-properties-common && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN sudo add-apt-repository ppa:openjdk-r/ppa && apt update && apt install openjdk-11-jdk
+RUN sudo add-apt-repository -y ppa:openjdk-r/ppa && apt update && apt-get -y install openjdk-11-jdk
 
 #replace awk with gnu awk
 RUN apt-get update && apt-get install -y gawk xxd cgpt
