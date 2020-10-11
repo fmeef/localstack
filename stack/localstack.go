@@ -308,7 +308,7 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 
 	vols := specgen.NamedVolume{
 		Name: buildVolumeName,
-		Dest: "/build",
+		Dest: "/root",
 	}
 
 	spec.Terminal = true
