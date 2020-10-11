@@ -44,7 +44,7 @@ case "${DEVICE}" in
     ;;
 esac
 
-# this is a build time option to override stack setting IGNORE_VERSION_CHECKS
+# this is a build time option to force build
 FORCE_BUILD=false
 if [ "$2" = true ]; then
   echo "Setting FORCE_BUILD=true"
@@ -65,9 +65,6 @@ STACK_NAME=<% .Name %>
 
 # version of stack running
 STACK_VERSION=<% .Version %>
-
-# whether version checks should be ignored
-IGNORE_VERSION_CHECKS=<% .IgnoreVersionChecks %>
 
 # version of chromium to pin to if requested
 CHROMIUM_PINNED_VERSION=<% .ChromiumVersion %>
@@ -260,10 +257,6 @@ check_for_new_versions() {
   else
     if [ "${FORCE_BUILD}" = true ]; then
       message="No build is required, but FORCE_BUILD=true"
-      log "${message}"
-      BUILD_REASON="${message}"
-    elif [ "${IGNORE_VERSION_CHECKS}" = true ]; then
-      message="No build is required, but IGNORE_VERSION_CHECKS=true"
       log "${message}"
       BUILD_REASON="${message}"
     else
