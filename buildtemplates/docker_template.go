@@ -4,11 +4,8 @@ const DockerTemplate = `FROM ubuntu:18.04
 
 MAINTAINER Alex Ballmer <gnu3ra@riseup.net>
 
-ENV HOME=/build
-ENV PATH=/build/scripts:/build/out/host/linux-x86/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-ARG UID=1000
-ARG GID=1000
+ENV HOME=/root
+ENV PATH=/root/scripts:/root/out/host/linux-x86/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -18,21 +15,15 @@ RUN apt-get update && \
       git-core g++-multilib gnupg gperf jq lib32ncurses5-dev lib32z1-dev\
       lib32z-dev libbz2-dev libc6-dev-i386 libffi-dev libghc-bzlib-dev\
       libgl1-mesa-dev libjpeg8-dev liblz4-tool libssl-dev libx11-dev\
-      libxml2-dev libxml2-utils libxslt1-dev lzop\
+      libxml2-dev libxml2-utils libxslt1-dev lzop gawk xxd cgpt\
       openssh-server optipng pngcrush pxz python-dev python-networkx\
       python-pip repo squashfs-tools unzip x11proto-core-dev xsltproc\
-      zip zlib1g-dev rsync sudo python-protobuf software-properties-common && \
+      zip zlib1g-dev rsync sudo python-protobuf software-properties-common lsb-release && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN sudo add-apt-repository -y ppa:openjdk-r/ppa && apt update && apt-get -y install openjdk-11-jdk
 
-#replace awk with gnu awk
-RUN apt-get update && apt-get install -y gawk xxd cgpt
-
-
-
 # install chromium build dependencies
-RUN apt-get update && apt-get install -y lsb-release
 COPY install-build-deps.sh install-build-deps.sh
 COPY install-build-deps-android.sh install-build-deps-android.sh
 
@@ -41,26 +32,12 @@ RUN chmod +x install-build-deps-android.sh
 
 RUN /bin/bash install-build-deps-android.sh --no-prompt
 
-RUN groupadd -g $GID -o build
-RUN useradd -G plugdev,sudo -g $GID -u $UID -d $HOME -ms /bin/bash build
-
-RUN sed -i /etc/sudoers -re 's/^%sudo.*/%sudo ALL=(ALL:ALL) NOPASSWD: ALL/g'
-RUN pip install awscli
-
-RUN systemctl enable ssh
-
 RUN mkdir -p /script /keys /release /logs
-RUN chown -R build:build /script /keys /release /logs
-RUN chmod -R 755 /script /keys /release /logs
-
 
 # mount volume to store source tree
-VOLUME ["/build"]
+VOLUME ["/root"]
 
-
-# create new user with home in our volume
-USER build
-WORKDIR /build
+WORKDIR /root
 `
 
 const ChromiumDeps = `
