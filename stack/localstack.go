@@ -290,7 +290,7 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 
 	buildvolume := specs.Mount{
 		Destination: "/build",
-		Source: "testbuild",
+		Source: buildVolumeName,
 		Type: "volume",
 	}
 
