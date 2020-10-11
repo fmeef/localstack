@@ -288,12 +288,6 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 	log.Info("Starting container")
 	spec := specgen.NewSpecGenerator(imageTag, false)
 
-	buildvolume := specs.Mount{
-		Destination: "/build",
-		Source: buildVolumeName,
-		Type: "volume",
-	}
-
 	scriptmount := specs.Mount{
 		Destination: "/script",
 		Source: s.scriptPath,
@@ -312,9 +306,15 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 		Type: "bind",
 	}
 
+	vols := specgen.NamedVolume{
+		Name: buildVolumeName,
+		Dest: "/build",
+	}
+
 	spec.Terminal = true
 	spec.Name = containerName
-	spec.Mounts = []specs.Mount{buildvolume, scriptmount, keysmount, releasemount}
+	spec.Volumes = []*specgen.NamedVolume{&vols}
+	spec.Mounts = []specs.Mount{scriptmount, keysmount, releasemount}
 
 	resp, err := containers.CreateWithSpec(s.ctx, spec)
 
