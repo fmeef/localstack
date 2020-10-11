@@ -36,6 +36,9 @@ const (
 	sockPath = "/tmp/localstack.sock"
 	containerName = "localstack-build"
 	buildVolumeName = "localstack-build"
+	keysVolumeName = "localstack-keys"
+	scriptsVolumeName = "localstack-scripts"
+	releaseVolumeName = "localstack-release"
 )
 
 type DockerStackConfig struct {
@@ -216,7 +219,7 @@ func (s *DockerStack) setupTmpDir() error {
 
 	defer df.Close()
 
-	bs, err := os.Create(path.Join(s.statePath, "mounts/script/build.sh"))
+	bs, err := os.Create(path.Join(s.statePath, "build-ubuntu/build.sh"))
 
 	if err != nil {
 		return fmt.Errorf("failed to write build script")
@@ -250,17 +253,45 @@ func (s *DockerStack) Build(force bool) error {
 	return s.containerExec(args, []string{}, false, true)
 }
 
-func (s *DockerStack) setupVolumes() error {
-	resp, err := volumes.Inspect(s.ctx, buildVolumeName)
+func (s *DockerStack) setupVolume(name string) error {
+	resp, err := volumes.Inspect(s.ctx, name)
 
 	if err != nil || resp == nil {
 		_, err := volumes.Create(s.ctx, entities.VolumeCreateOptions{
-			Name: buildVolumeName,
+			Name: name,
 		})
 
 		if err != nil {
 			return fmt.Errorf("Error, failed to create volume %v", err)
 		}
+	}
+
+	return nil
+}
+
+func (s *DockerStack) setupVolumes() error {
+	err := s.setupVolume(buildVolumeName)
+
+	if err != nil {
+		return err
+	}
+
+	err = s.setupVolume(scriptsVolumeName)
+
+	if err != nil {
+		return err
+	}
+
+	err = s.setupVolume(releaseVolumeName)
+
+	if err != nil {
+		return err
+	}
+
+	err = s.setupVolume(keysVolumeName)
+
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -290,33 +321,26 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 	log.Info("Starting container")
 	spec := specgen.NewSpecGenerator(imageTag, false)
 
-	scriptmount := specs.Mount{
-		Destination: "/script",
-		Source: s.scriptPath,
-		Type: "bind",
-	}
-
-	keysmount := specs.Mount{
-		Destination: "/keys",
-		Source: s.keysPath,
-		Type: "bind",
-	}
-
 	releasemount := specs.Mount{
 		Destination: "/release",
 		Source: s.releasePath,
 		Type: "bind",
 	}
 
-	vols := specgen.NamedVolume{
+	buildvol := specgen.NamedVolume{
 		Name: buildVolumeName,
-		Dest: "/root",
+		Dest: "/build",
+	}
+
+	keysvol := specgen.NamedVolume{
+		Name: keysVolumeName,
+		Dest: "/keys",
 	}
 
 	spec.Terminal = true
 	spec.Name = containerName
-	spec.Volumes = []*specgen.NamedVolume{&vols}
-	spec.Mounts = []specs.Mount{scriptmount, keysmount, releasemount}
+	spec.Volumes = []*specgen.NamedVolume{&buildvol, &keysvol}
+	spec.Mounts = []specs.Mount{releasemount}
 
 	resp, err := containers.CreateWithSpec(s.ctx, spec)
 

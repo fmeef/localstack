@@ -41,8 +41,10 @@ RUN sed -i /etc/sudoers -re 's/^%sudo.*/%sudo ALL=(ALL:ALL) NOPASSWD: ALL/g'
 
 RUN mkdir -p /script /keys /release /logs
 
+COPY build.sh /script/build.sh
+
 # mount volume to store source tree
-VOLUME ["/build"]
+VOLUME ["/build", "/keys"]
 
 USER build
 
