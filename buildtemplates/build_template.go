@@ -327,10 +327,11 @@ build_fdroid() {
 }
 
 get_encryption_key() {
-  if [ $(ls ${AWS_KEYS_BUCKET}/${DEVICE} || true | wc -l) == '0' ]; then
+  if [ $(sudo -E ls ${AWS_KEYS_BUCKET}/${DEVICE} || true | wc -l) == '0' ]; then
      echo "No existing encryption keys - new keys will be generated later in the build process"
   else
-    cp -Rv ${AWS_KEYS_BUCKET}/* ${KEYS_DIR}
+    sudo -E cp -Rv ${AWS_KEYS_BUCKET}/* ${KEYS_DIR}
+    sudo -E chown -R build:build ${KEYS_DIR}
   fi
 }
 
@@ -1154,14 +1155,15 @@ aws_logging() {
 aws_import_keys() {
   log_header "${FUNCNAME[0]}"
 
-  if [ "$(ls ${AWS_KEYS_BUCKET}/${DEVICE} | wc -l)" == '0' ]; then
+  if [ "$(sudo -E ls ${AWS_KEYS_BUCKET}/${DEVICE} | wc -l)" == '0' ]; then
     log "No keys were found - generating keys"
     gen_keys
     log "Syncing keys"
-    cp -Rv "${KEYS_DIR}" "${AWS_KEYS_BUCKET}"
+    sudo -E cp -Rv "${KEYS_DIR}" "${AWS_KEYS_BUCKET}"
   else
     log "Keys already exist for ${DEVICE} - syncing them from S3"
-    cp -Rv ${AWS_KEYS_BUCKET} ${KEYS_DIR}
+    sudo -E cp -Rv ${AWS_KEYS_BUCKET} ${KEYS_DIR}
+    sudo -E chown -R build:build ${KEYS_DIR}
   fi
 
   # handle migration with chromium.keystore
@@ -1171,7 +1173,7 @@ aws_import_keys() {
 	keytool -genkey -v -keystore chromium.keystore -storetype pkcs12 -alias chromium -keyalg RSA -keysize 4096 \
         -sigalg SHA512withRSA -validity 10000 -dname "cn=RattlesnakeOS" -storepass chromium
     log "Uploading new chromium.keystore"
-    cp -Rv ${KEYS_DIR} ${AWS_KEYS_BUCKET}
+    sudo -E cp -Rv ${KEYS_DIR} ${AWS_KEYS_BUCKET}
   fi
   popd
 }

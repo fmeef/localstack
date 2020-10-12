@@ -249,7 +249,7 @@ func (s *DockerStack) containerExists() (bool, error) {
 }
 
 func (s *DockerStack) Build(force bool) error {
-	args := []string{s.config.Device, strconv.FormatBool(force)}
+	args := []string{"/bin/bash", "/script/build.sh", s.config.Device, strconv.FormatBool(force)}
 	return s.containerExec(args, []string{}, false, true)
 }
 
@@ -341,6 +341,7 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 	spec.Name = containerName
 	spec.Volumes = []*specgen.NamedVolume{&buildvol, &keysvol}
 	spec.Mounts = []specs.Mount{releasemount}
+	spec.Command = args
 
 	resp, err := containers.CreateWithSpec(s.ctx, spec)
 
@@ -394,6 +395,14 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 		return fmt.Errorf("Failed to attach to container: %v", err)
 	}
 
+
+	stopped := define.ContainerStateStopped
+	_, err = containers.Wait(s.ctx, resp.ID, &stopped)
+
+	if err != nil {
+		return fmt.Errorf("failed to wait for container: %v", err)
+	}
+
 	return nil
 }
 
@@ -407,7 +416,7 @@ func (s *DockerStack) Apply() error {
 
 	imageBuildah := imagebuildah.BuildOptions{
 		ContextDirectory: path.Join(s.statePath, "build-ubuntu"),
-		PullPolicy: buildah.PullAlways,
+		PullPolicy: buildah.PullIfNewer,
 		Quiet: false,
 		Isolation: buildah.IsolationOCIRootless,
 		Compression: archive.Gzip,
