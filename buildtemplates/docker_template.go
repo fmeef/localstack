@@ -7,9 +7,9 @@ MAINTAINER Alex Ballmer <gnu3ra@riseup.net>
 ENV HOME=/build
 ENV PATH=/build/scripts:/build/out/host/linux-x86/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-ARG DEBIAN_FRONTEND=noninteractive
-ARG UID=<% .Uid %>
-ARG GID=<% .Gid %>
+ENV DEBIAN_FRONTEND=noninteractive
+ENV UID=<% .Uid %>
+ENV GID=<% .Gid %>
 
 # install build dependencies
 RUN apt-get update && \
