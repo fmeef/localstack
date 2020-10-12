@@ -388,8 +388,8 @@ build_chromium() {
     fetch --nohooks android
   fi
   cd src
-  git fetch --all
-  git fetch --tags
+  retry git fetch --all
+  retry git fetch --tags
   # checkout specific revision
   git checkout "${CHROMIUM_REVISION}" -f
 
