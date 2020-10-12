@@ -428,6 +428,7 @@ func (s *DockerStack) Apply() error {
 		CommonBuildOpts: &commonOpts,
 		NoCache: false,
 		Layers: true,
+		RemoveIntermediateCtrs: false,
 	}
 
 	buildoptions := entities.BuildOptions{
