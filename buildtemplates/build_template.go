@@ -198,7 +198,7 @@ check_for_new_versions() {
   needs_update=false
 
   # check aosp
-  existing_aosp_build=$(sudo cat ${AWS_RELEASE_BUCKET}/${DEVICE}-vendor || echo "")
+  existing_aosp_build=$(sudo -E cat ${AWS_RELEASE_BUCKET}/${DEVICE}-vendor || echo "")
   if [ "${existing_aosp_build}" == "${AOSP_VENDOR_BUILD}" ]; then
     log "AOSP build (${existing_aosp_build}) is up to date"
   else
@@ -212,13 +212,13 @@ check_for_new_versions() {
     log "Setting LATEST_CHROMIUM to pinned version ${CHROMIUM_PINNED_VERSION}"
     LATEST_CHROMIUM="${CHROMIUM_PINNED_VERSION}"
   fi
-  existing_chromium=$(sudo cat ${AWS_RELEASE_BUCKET}/chromium/revision 2>/dev/null || echo "")
-  chromium_included=$(sudo cat ${AWS_RELEASE_BUCKET}/chromium/included 2>/dev/null|| echo "")
+  existing_chromium=$(sudo -E cat ${AWS_RELEASE_BUCKET}/chromium/revision 2>/dev/null || echo "")
+  chromium_included=$(sudo -E cat ${AWS_RELEASE_BUCKET}/chromium/included 2>/dev/null|| echo "")
   if [ "${existing_chromium}" == "${LATEST_CHROMIUM}" ] && [ "${chromium_included}" == "yes" ]; then
     log "Chromium build (${existing_chromium}) is up to date"
   else
     log "Chromium needs to be updated to ${LATEST_CHROMIUM}"
-    sudo mkdir -p ${AWS_RELEASE_BUCKET}/chromium
+    sudo -E -E mkdir -p ${AWS_RELEASE_BUCKET}/chromium
     sudo -E sh -c 'echo "no" > ${AWS_RELEASE_BUCKET}/chromium/included'
     needs_update=true
     if [ "${existing_chromium}" == "${LATEST_CHROMIUM}" ]; then
@@ -229,7 +229,7 @@ check_for_new_versions() {
   fi
 
   # check fdroid
-  existing_fdroid_client=$(sudo cat ${AWS_RELEASE_BUCKET}/fdroid/revision 2>/dev/null || echo "")
+  existing_fdroid_client=$(sudo -E cat ${AWS_RELEASE_BUCKET}/fdroid/revision 2>/dev/null || echo "")
   if [ "${existing_fdroid_client}" == "${FDROID_CLIENT_VERSION}" ]; then
     log "F-Droid build (${existing_fdroid_client}) is up to date"
   else
@@ -239,7 +239,7 @@ check_for_new_versions() {
   fi
 
   # check fdroid priv extension
-  existing_fdroid_priv_version=$(sudo cat ${AWS_RELEASE_BUCKET}/fdroid-priv/revision 2>/dev/null || echo "")
+  existing_fdroid_priv_version=$(sudo -E cat ${AWS_RELEASE_BUCKET}/fdroid-priv/revision 2>/dev/null || echo "")
   if [ "${existing_fdroid_priv_version}" == "${FDROID_PRIV_EXT_VERSION}" ]; then
     log "F-Droid privileged extension build (${existing_fdroid_priv_version}) is up to date"
   else
@@ -270,10 +270,10 @@ add_chromium() {
   log_header "${FUNCNAME[0]}"
 
   # add latest built chromium to external/chromium
-  sudo cp ${AWS_RELEASE_BUCKET}/chromium/TrichromeLibrary.apk ${BUILD_DIR}/external/chromium/prebuilt/arm64/
-  sudo cp ${AWS_RELEASE_BUCKET}/chromium/TrichromeWebView.apk ${BUILD_DIR}/external/chromium/prebuilt/arm64/
-  sudo cp ${AWS_RELEASE_BUCKET}/chromium/TrichromeChrome.apk ${BUILD_DIR}/external/chromium/prebuilt/arm64/
-  sudo chown -R build:build ${BUILD_DIR}/external/chromium/prebuilt/arm64/
+  sudo -E cp ${AWS_RELEASE_BUCKET}/chromium/TrichromeLibrary.apk ${BUILD_DIR}/external/chromium/prebuilt/arm64/
+  sudo -E cp ${AWS_RELEASE_BUCKET}/chromium/TrichromeWebView.apk ${BUILD_DIR}/external/chromium/prebuilt/arm64/
+  sudo -E cp ${AWS_RELEASE_BUCKET}/chromium/TrichromeChrome.apk ${BUILD_DIR}/external/chromium/prebuilt/arm64/
+  sudo -E chown -R build:build ${BUILD_DIR}/external/chromium/prebuilt/arm64/
 
   cat <<EOF > "${BUILD_DIR}/frameworks/base/core/res/res/xml/config_webview_packages.xml"
 <?xml version="1.0" encoding="utf-8"?>
@@ -356,7 +356,7 @@ setup_env() {
 check_chromium() {
   log_header "${FUNCNAME[0]}"
 
-  current=$(sudo cat ${AWS_RELEASE_BUCKET}/chromium/revision 2>/dev/null || echo "")
+  current=$(sudo -E cat ${AWS_RELEASE_BUCKET}/chromium/revision 2>/dev/null || echo "")
   log "Chromium current: ${current}"
 
   log "Chromium latest: ${LATEST_CHROMIUM}"
@@ -393,7 +393,7 @@ build_chromium() {
   git checkout "${CHROMIUM_REVISION}" -f
 
   # install dependencies
-  echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
+  echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo -E debconf-set-selections
   log "Installing chromium build dependencies"
 
   # run gclient sync (runhooks will run as part of this)
@@ -459,9 +459,9 @@ EOF
   done
 
   log "Uploading trichrome apks to s3"
-  retry sudo cp TrichromeLibrary.apk ${AWS_RELEASE_BUCKET}/chromium/TrichromeLibrary.apk
-  retry sudo cp TrichromeWebView.apk ${AWS_RELEASE_BUCKET}/chromium/TrichromeWebView.apk
-  retry sudo cp TrichromeChrome.apk ${AWS_RELEASE_BUCKET}/chromium/TrichromeChrome.apk
+  retry sudo -E cp TrichromeLibrary.apk ${AWS_RELEASE_BUCKET}/chromium/TrichromeLibrary.apk
+  retry sudo -E cp TrichromeWebView.apk ${AWS_RELEASE_BUCKET}/chromium/TrichromeWebView.apk
+  retry sudo -E cp TrichromeChrome.apk ${AWS_RELEASE_BUCKET}/chromium/TrichromeChrome.apk
   sudo -E sh -c 'echo "${CHROMIUM_REVISION}" > ${AWS_RELEASE_BUCKET}/chromium/revision'
 }
 
@@ -1082,7 +1082,7 @@ aws_upload() {
   #read -r old_metadata <<< "$(wget -O - "${RELEASE_URL}/${RELEASE_CHANNEL}")"
   #old_date="$(cut -d ' ' -f 1 <<< "${old_metadata}")"
   #(
-  sudo cp ${BUILD_DIR}/out/release-${DEVICE}-${build_date}/${DEVICE}-ota_update-${build_date}.zip ${AWS_RELEASE_BUCKET} &&
+  sudo -E cp ${BUILD_DIR}/out/release-${DEVICE}-${build_date}/${DEVICE}-ota_update-${build_date}.zip ${AWS_RELEASE_BUCKET} &&
   sudo -E sh -c 'echo "${build_date} ${build_timestamp} ${AOSP_BUILD}" > ${AWS_RELEASE_BUCKET}/${RELEASE_CHANNEL}' &&
   sudo -E sh -c 'echo "${BUILD_TIMESTAMP}" > ${AWS_RELEASE_BUCKET}/${RELEASE_CHANNEL}-true-timestamp'
   #) && ( aws s3 rm "s3://${AWS_RELEASE_BUCKET}/${DEVICE}-ota_update-${old_date}.zip" || true )
@@ -1091,23 +1091,23 @@ aws_upload() {
   retry cp ${BUILD_DIR}/out/release-${DEVICE}-${build_date}/${DEVICE}-factory-${build_date}.tar.xz ${AWS_RELEASE_BUCKET}/${DEVICE}-factory-latest.tar.xz
 
   # cleanup old target files if some exist
-  if [ "$(sudo ls ${AWS_RELEASE_BUCKET}/${DEVICE}-target | wc -l)" != '0' ]; then
+  if [ "$(sudo -E ls ${AWS_RELEASE_BUCKET}/${DEVICE}-target | wc -l)" != '0' ]; then
     cleanup_target_files
   fi
 
   # copy new target file to s3
-  retry sudo cp ${BUILD_DIR}/out/release-${DEVICE}-${build_date}/${DEVICE}-target_files-${build_date}.zip ${AWS_RELEASE_BUCKET}/${DEVICE}-target/${DEVICE}-target-files-${build_date}.zip
+  retry sudo -E cp ${BUILD_DIR}/out/release-${DEVICE}-${build_date}/${DEVICE}-target_files-${build_date}.zip ${AWS_RELEASE_BUCKET}/${DEVICE}-target/${DEVICE}-target-files-${build_date}.zip
 }
 
 cleanup_target_files() {
   log_header "${FUNCNAME[0]}"
 
-  sudo rsync -avz --delete ${AWS_RELEASE_BUCKET}/${DEVICE}-target ${BUILD_DIR}/
-  sudo rsync -avz --delete ${BUILD_DIR}/${DEVICE}-target ${AWS_RELEASE_BUCKET}
+  sudo -E rsync -avz --delete ${AWS_RELEASE_BUCKET}/${DEVICE}-target ${BUILD_DIR}/
+  sudo -E rsync -avz --delete ${BUILD_DIR}/${DEVICE}-target ${AWS_RELEASE_BUCKET}
   cd "${BUILD_DIR}/${DEVICE}-target"
   for target_file in ${DEVICE}-target-files-*.zip ; do
     old_date=$(echo "${target_file}" | cut --delimiter "-" --fields 4 | cut --delimiter "." --fields 5 --complement)
-    sudo rm ${AWS_RELEASE_BUCKET}/${DEVICE}-target/${DEVICE}-target-files-${old_date}.zip || true
+    sudo -E rm ${AWS_RELEASE_BUCKET}/${DEVICE}-target/${DEVICE}-target-files-${old_date}.zip || true
   done
 }
 
@@ -1115,12 +1115,12 @@ checkpoint_versions() {
   log_header "${FUNCNAME[0]}"
 
   # checkpoint stack version
-  sudo mkdir -p ${AWS_RELEASE_BUCKET}/rattlesnakeos-stack
+  sudo -E mkdir -p ${AWS_RELEASE_BUCKET}/rattlesnakeos-stack
   sudo -E sh -c 'echo "${STACK_VERSION}" > ${AWS_RELEASE_BUCKET}/rattlesnakeos-stack/revision'
 
   # checkpoint f-droid
-  sudo mkdir -p ${AWS_RELEASE_BUCKET}/fdroid
-  sudo mkdir -p ${AWS_RELEASE_BUCKET}/fdroid-priv
+  sudo -E mkdir -p ${AWS_RELEASE_BUCKET}/fdroid
+  sudo -E mkdir -p ${AWS_RELEASE_BUCKET}/fdroid-priv
   sudo -E sh -c 'echo "${FDROID_PRIV_EXT_VERSION}" > ${AWS_RELEASE_BUCKET}/fdroid-priv/revision'
   sudo -E sh -c 'echo "${FDROID_CLIENT_VERSION}" > ${AWS_RELEASE_BUCKET}/fdroid/revision'
 
@@ -1128,7 +1128,7 @@ checkpoint_versions() {
   sudo -E sh -c 'echo  ${AOSP_VENDOR_BUILD} > ${AWS_RELEASE_BUCKET}/${DEVICE}-vendor || true'
 
   # checkpoint chromium
-  sudo mkdir -p ${AWS_RELEASE_BUCKET}/chromium
+  sudo -E mkdir -p ${AWS_RELEASE_BUCKET}/chromium
   sudo -E sh -c 'echo yes > ${AWS_RELEASE_BUCKET}/chromium/included'
 }
 
