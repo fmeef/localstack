@@ -219,7 +219,7 @@ check_for_new_versions() {
   else
     log "Chromium needs to be updated to ${LATEST_CHROMIUM}"
     sudo mkdir -p ${AWS_RELEASE_BUCKET}/chromium
-    sudo su -c 'echo "no" > ${AWS_RELEASE_BUCKET}/chromium/included'
+    sudo -E sh -c 'echo "no" > ${AWS_RELEASE_BUCKET}/chromium/included'
     needs_update=true
     if [ "${existing_chromium}" == "${LATEST_CHROMIUM}" ]; then
       BUILD_REASON="${BUILD_REASON} 'Chromium version ${existing_chromium} built but not installed'"
@@ -462,7 +462,7 @@ EOF
   retry sudo cp TrichromeLibrary.apk ${AWS_RELEASE_BUCKET}/chromium/TrichromeLibrary.apk
   retry sudo cp TrichromeWebView.apk ${AWS_RELEASE_BUCKET}/chromium/TrichromeWebView.apk
   retry sudo cp TrichromeChrome.apk ${AWS_RELEASE_BUCKET}/chromium/TrichromeChrome.apk
-  sudo su -c 'echo "${CHROMIUM_REVISION}" > ${AWS_RELEASE_BUCKET}/chromium/revision'
+  sudo -E sh -c 'echo "${CHROMIUM_REVISION}" > ${AWS_RELEASE_BUCKET}/chromium/revision'
 }
 
 aosp_repo_init() {
@@ -1083,8 +1083,8 @@ aws_upload() {
   #old_date="$(cut -d ' ' -f 1 <<< "${old_metadata}")"
   #(
   sudo cp ${BUILD_DIR}/out/release-${DEVICE}-${build_date}/${DEVICE}-ota_update-${build_date}.zip ${AWS_RELEASE_BUCKET} &&
-  sudo su -c 'echo "${build_date} ${build_timestamp} ${AOSP_BUILD}" > ${AWS_RELEASE_BUCKET}/${RELEASE_CHANNEL}' &&
-  sudo su -c 'echo "${BUILD_TIMESTAMP}" > ${AWS_RELEASE_BUCKET}/${RELEASE_CHANNEL}-true-timestamp'
+  sudo -E sh -c 'echo "${build_date} ${build_timestamp} ${AOSP_BUILD}" > ${AWS_RELEASE_BUCKET}/${RELEASE_CHANNEL}' &&
+  sudo -E sh -c 'echo "${BUILD_TIMESTAMP}" > ${AWS_RELEASE_BUCKET}/${RELEASE_CHANNEL}-true-timestamp'
   #) && ( aws s3 rm "s3://${AWS_RELEASE_BUCKET}/${DEVICE}-ota_update-${old_date}.zip" || true )
 
   # upload factory image
@@ -1116,20 +1116,20 @@ checkpoint_versions() {
 
   # checkpoint stack version
   sudo mkdir -p ${AWS_RELEASE_BUCKET}/rattlesnakeos-stack
-  sudo su -c 'echo "${STACK_VERSION}" > ${AWS_RELEASE_BUCKET}/rattlesnakeos-stack/revision'
+  sudo -E sh -c 'echo "${STACK_VERSION}" > ${AWS_RELEASE_BUCKET}/rattlesnakeos-stack/revision'
 
   # checkpoint f-droid
   sudo mkdir -p ${AWS_RELEASE_BUCKET}/fdroid
   sudo mkdir -p ${AWS_RELEASE_BUCKET}/fdroid-priv
-  sudo su -c 'echo "${FDROID_PRIV_EXT_VERSION}" > ${AWS_RELEASE_BUCKET}/fdroid-priv/revision'
-  sudo su -c 'echo "${FDROID_CLIENT_VERSION}" > ${AWS_RELEASE_BUCKET}/fdroid/revision'
+  sudo -E sh -c 'echo "${FDROID_PRIV_EXT_VERSION}" > ${AWS_RELEASE_BUCKET}/fdroid-priv/revision'
+  sudo -E sh -c 'echo "${FDROID_CLIENT_VERSION}" > ${AWS_RELEASE_BUCKET}/fdroid/revision'
 
   # checkpoint aosp
-  sudo su -c 'echo  ${AOSP_VENDOR_BUILD} > ${AWS_RELEASE_BUCKET}/${DEVICE}-vendor || true'
+  sudo -E sh -c 'echo  ${AOSP_VENDOR_BUILD} > ${AWS_RELEASE_BUCKET}/${DEVICE}-vendor || true'
 
   # checkpoint chromium
   sudo mkdir -p ${AWS_RELEASE_BUCKET}/chromium
-  sudo su -c 'echo yes > ${AWS_RELEASE_BUCKET}/chromium/included'
+  sudo -E sh -c 'echo yes > ${AWS_RELEASE_BUCKET}/chromium/included'
 }
 
 aws_notify_simple() {
