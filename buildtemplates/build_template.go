@@ -95,7 +95,7 @@ RELEASE_URL="https://ota.ballmerlabs.net" #TODO: template this
 RELEASE_CHANNEL="${DEVICE}-${BUILD_CHANNEL}"
 BUILD_DATE=$(date +%Y.%m.%d.%H)
 BUILD_TIMESTAMP=$(date +%s)
-BUILD_DIR="/root/build"
+BUILD_DIR="/build/build"
 KEYS_DIR="${BUILD_DIR}/keys"
 CERTIFICATE_SUBJECT='/CN=RattlesnakeOS'
 OFFICIAL_FDROID_KEY="43238d512c1e5eb2d6569f4a3afbf5523418b82e0a3ed1552770abb9a9c9ccab"
