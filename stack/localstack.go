@@ -417,6 +417,8 @@ func (s *DockerStack) Apply() error {
 		Out: os.Stdout,
 		ReportWriter: os.Stdout,
 		CommonBuildOpts: &commonOpts,
+		NoCache: false,
+		Layers: true,
 	}
 
 	buildoptions := entities.BuildOptions{
