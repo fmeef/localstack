@@ -327,10 +327,10 @@ build_fdroid() {
 }
 
 get_encryption_key() {
-  if [ $(sudo -E ls ${AWS_KEYS_BUCKET}/${DEVICE} || true | wc -l) == '0' ]; then
+  if [ "$(sudo -E ls ${AWS_KEYS_BUCKET}/${DEVICE} || true | wc -l)" == '0' ]; then
      echo "No existing encryption keys - new keys will be generated later in the build process"
   else
-    sudo -E cp -Rv ${AWS_KEYS_BUCKET}/* ${KEYS_DIR}
+    sudo -E rsync -avz ${AWS_KEYS_BUCKET}/ ${KEYS_DIR}/
     sudo -E chown -R build:build ${KEYS_DIR}
   fi
 }
@@ -388,7 +388,6 @@ build_chromium() {
     fetch --nohooks android
   fi
   cd src
-  git checkout master
   retry git fetch --all
   retry git fetch --tags
   # checkout specific revision

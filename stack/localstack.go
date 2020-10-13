@@ -249,7 +249,7 @@ func (s *DockerStack) containerExists() (bool, error) {
 }
 
 func (s *DockerStack) Build(force bool) error {
-	args := []string{"/bin/bash", "/script/build.sh", s.config.Device, strconv.FormatBool(force)}
+	args := []string{"bash", "/script/build.sh", s.config.Device, strconv.FormatBool(force)}
 	return s.containerExec(args, []string{}, false, true)
 }
 
