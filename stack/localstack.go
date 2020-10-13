@@ -341,7 +341,6 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 	spec.Name = containerName
 	spec.Volumes = []*specgen.NamedVolume{&buildvol, &keysvol}
 	spec.Mounts = []specs.Mount{releasemount}
-	spec.Command = args
 
 	resp, err := containers.CreateWithSpec(s.ctx, spec)
 
@@ -428,7 +427,9 @@ func (s *DockerStack) Apply() error {
 		CommonBuildOpts: &commonOpts,
 		NoCache: false,
 		Layers: true,
+		Squash: false,
 		RemoveIntermediateCtrs: false,
+		ForceRmIntermediateCtrs: false,
 	}
 
 	buildoptions := entities.BuildOptions{

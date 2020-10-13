@@ -330,7 +330,7 @@ get_encryption_key() {
   if [ "$(sudo -E ls ${AWS_KEYS_BUCKET}/${DEVICE} || true | wc -l)" == '0' ]; then
      echo "No existing encryption keys - new keys will be generated later in the build process"
   else
-    sudo -E rsync -avz ${AWS_KEYS_BUCKET}/ ${KEYS_DIR}/
+    sudo -E rsync -avz ${AWS_KEYS_BUCKET} ${KEYS_DIR}
     sudo -E chown -R build:build ${KEYS_DIR}
   fi
 }
@@ -1159,10 +1159,10 @@ aws_import_keys() {
     log "No keys were found - generating keys"
     gen_keys
     log "Syncing keys"
-    sudo -E rsync -avz ${KEYS_DIR}/ ${AWS_KEYS_BUCKET}/
+    sudo -E rsync -avz ${KEYS_DIR} ${AWS_KEYS_BUCKET}
   else
     log "Keys already exist for ${DEVICE} - syncing them from S3"
-    sudo -E rsync -avz ${AWS_KEYS_BUCKET}/ ${KEYS_DIR}/
+    sudo -E rsync -avz ${AWS_KEYS_BUCKET} ${KEYS_DIR}
     sudo -E chown -R build:build ${KEYS_DIR}
   fi
 
@@ -1173,7 +1173,7 @@ aws_import_keys() {
 	keytool -genkey -v -keystore chromium.keystore -storetype pkcs12 -alias chromium -keyalg RSA -keysize 4096 \
         -sigalg SHA512withRSA -validity 10000 -dname "cn=RattlesnakeOS" -storepass chromium
     log "Uploading new chromium.keystore"
-    sudo -E rsync -avz ${KEYS_DIR}/ ${AWS_KEYS_BUCKET}/
+    sudo -E rsync -avz ${KEYS_DIR} ${AWS_KEYS_BUCKET}
   fi
   popd
 }
