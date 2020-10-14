@@ -242,18 +242,10 @@ func (s *DockerStack) setupTmpDir() error {
 	return nil
 }
 
-func (s *DockerStack) containerExists() (bool, error) {
-	filters := make(map[string][]string)
+func (s *DockerStack) containerExists() bool {
+	container, err := containers.Inspect(s.ctx, containerName, nil)
 
-	filters["name"] = []string{containerName}
-
-
-	containerList, err := containers.List(s.ctx, filters, nil, nil, nil, nil)
-
-	if err != nil {
-		return false, fmt.Errorf("failed to list containers: %v", err)
-	}
-	return len(containerList) == 0, nil
+	return container != nil && err == nil
 }
 
 func (s *DockerStack) Build(force bool) error {
@@ -321,11 +313,7 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 		return fmt.Errorf("failed to setup build volume: %v", err)
 	}
 
-	exist, err := s.containerExists()
-
-	if err != nil {
-		return err
-	}
+	exist := s.containerExists()
 
 	if exist {
 		var volume = false
