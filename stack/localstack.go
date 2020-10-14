@@ -394,14 +394,6 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 		return fmt.Errorf("Failed to attach to container: %v", err)
 	}
 
-
-	stopped := define.ContainerStateStopped
-	_, err = containers.Wait(s.ctx, resp.ID, &stopped)
-
-	if err != nil {
-		return fmt.Errorf("failed to wait for container: %v", err)
-	}
-
 	return nil
 }
 
