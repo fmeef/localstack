@@ -38,6 +38,7 @@ const (
 	keysVolumeName = "localstack-keys"
 	scriptsVolumeName = "localstack-scripts"
 	releaseVolumeName = "localstack-release"
+	containerStopTimeout = 30
 )
 
 type DockerStackConfig struct {
@@ -75,6 +76,7 @@ type DockerStack struct {
 	releasePath string
 	podmanProc *exec.Cmd
 	renderedDockerFile []byte
+	stopTimeout uint
 }
 
 func blockUntilSocket(timeout int) error {
@@ -152,13 +154,20 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 		logsPath: path.Join(statepath, "mounts/logs"),
 		releasePath: path.Join(statepath, "mounts/release"),
 		buildPath: path.Join(statepath, "build-ubuntu"),
+		stopTimeout: containerStopTimeout,
 	}
 
 	return stack, nil
 }
 
 func (s *DockerStack) Shutdown() error {
-	err := s.podmanProc.Process.Kill()
+	err := s.stopContainer()
+
+	if err != nil {
+		log.Warnf("warning: failed to stop container on shutdown: %v", err)
+	}
+
+	err = s.podmanProc.Process.Kill()
 
 	if (err != nil) {
 		return fmt.Errorf("failed to signal podman process: %v", err)
@@ -292,6 +301,12 @@ func (s *DockerStack) setupVolumes() error {
 	return nil
 }
 
+func (s *DockerStack) stopContainer() error {
+	log.Info("stopping build container")
+
+	return containers.Stop(s.ctx, containerName, &s.stopTimeout)
+}
+
 func (s *DockerStack) containerExec(args []string, env []string, async bool, stdin bool) error {
 	log.Info("starting localstack build")
 
@@ -310,6 +325,13 @@ func (s *DockerStack) containerExec(args []string, env []string, async bool, std
 
 	if exist {
 		var volume = false
+
+		err = s.stopContainer()
+
+		if err != nil {
+			return fmt.Errorf("failed to stop container before remove: %v", err)
+		}
+
 		containers.Remove(s.ctx, containerName, nil, &volume)
 	}
 
