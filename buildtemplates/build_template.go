@@ -1153,7 +1153,6 @@ aws_logging() {
   log_header "${FUNCNAME[0]}"
 
   df -h
-  du -chs "${BUILD_DIR}" || true
   uptime
 }
 
