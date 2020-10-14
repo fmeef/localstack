@@ -518,10 +518,14 @@ aosp_repo_sync() {
     log "aosp repo sync attempt ${i}/10"
     repo sync -c --no-tags --no-clone-bundle --force-sync --jobs 32 && break
   done
+  repo forall -vc "git reset --hard"
+  repo forall -vc "git clean -f -d"
 }
 
 setup_vendor() {
   log_header "${FUNCNAME[0]}"
+
+  find /build/build/vendor/android-prepare-vendor/ -name '*.zip' -delete || true
 
   # get vendor files (with timeout)
   timeout 30m "${BUILD_DIR}/vendor/android-prepare-vendor/execute-all.sh" --debugfs --yes --device "${DEVICE}" \
@@ -1089,7 +1093,7 @@ aws_upload() {
   #) && ( aws s3 rm "s3://${AWS_RELEASE_BUCKET}/${DEVICE}-ota_update-${old_date}.zip" || true )
 
   # upload factory image
-  retry cp ${BUILD_DIR}/out/release-${DEVICE}-${build_date}/${DEVICE}-factory-${build_date}.tar.xz ${AWS_RELEASE_BUCKET}/${DEVICE}-factory-latest.tar.xz
+  retry sudo -E cp ${BUILD_DIR}/out/release-${DEVICE}-${build_date}/${DEVICE}-factory-${build_date}.tar.xz ${AWS_RELEASE_BUCKET}/${DEVICE}-factory-latest.tar.xz
 
   # cleanup old target files if some exist
   if [ "$(sudo -E ls ${AWS_RELEASE_BUCKET}/${DEVICE}-target | wc -l)" != '0' ]; then
@@ -1097,6 +1101,7 @@ aws_upload() {
   fi
 
   # copy new target file to s3
+  sudo -E mkdir -p ${AWS_RELEASE_BUCKET}/${DEVICE}-target
   retry sudo -E cp ${BUILD_DIR}/out/release-${DEVICE}-${build_date}/${DEVICE}-target_files-${build_date}.zip ${AWS_RELEASE_BUCKET}/${DEVICE}-target/${DEVICE}-target-files-${build_date}.zip
 }
 
