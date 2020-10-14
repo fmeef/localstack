@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/containers/buildah"
@@ -74,7 +73,7 @@ type DockerStack struct {
 	logsPath string
 	buildPath string
 	releasePath string
-	podmanProc *os.Process
+	podmanProc *exec.Cmd
 	renderedDockerFile []byte
 }
 
@@ -89,7 +88,7 @@ func blockUntilSocket(timeout int) error {
 	return fmt.Errorf("reached timeout", )
 }
 
-func startPodman(sockpath string) (string, *os.Process, error) {
+func startPodman(sockpath string) (string, *exec.Cmd, error) {
 
 	pathstr := fmt.Sprintf("unix://%s", path.Clean(sockpath))
 
@@ -108,7 +107,7 @@ func startPodman(sockpath string) (string, *os.Process, error) {
 		return "", nil, err
 	}
 
-	return pathstr, cmd.Process, nil
+	return pathstr, cmd, nil
 }
 
 func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
@@ -159,20 +158,16 @@ func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
 }
 
 func (s *DockerStack) Shutdown() error {
-	err := s.podmanProc.Signal(syscall.SIGTERM)
+	err := s.podmanProc.Process.Kill()
 
 	if (err != nil) {
 		return fmt.Errorf("failed to signal podman process: %v", err)
 	}
 
-	state, err := s.podmanProc.Wait()
+	err = s.podmanProc.Wait()
 
 	if (err != nil) {
 		return fmt.Errorf("failed to wait for podman process: %v", err)
-	}
-
-	if (!state.Exited()) {
-		return fmt.Errorf("podman process did not exit")
 	}
 
 	return nil
