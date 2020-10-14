@@ -113,6 +113,10 @@ func startPodman(sockpath string) (string, *exec.Cmd, error) {
 }
 
 func NewDockerStack(config *DockerStackConfig) (*DockerStack, error) {
+	if _, err := os.Stat(sockPath); !os.IsNotExist(err) {
+		return nil, fmt.Errorf("error: socket path %s exists. Is podman already running?", sockPath)
+	}
+
 	renderedBuildScript, err := utils.RenderTemplate(buildtemplates.BuildTemplate, config)
 
 	if err != nil {
