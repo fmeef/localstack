@@ -19,7 +19,13 @@ func init() {
 	flags.BoolVarP(&forceBuild, "force", "f", false, "skip version check and force a complete rebuild")
 }
 
+func shutdown(c *stack.DockerStack) {
+	err := c.Shutdown()
 
+	if (err != nil) {
+		log.Fatalf("failed to shutdown: %v", err)
+	}
+}
 
 var buildCmd = &cobra.Command{
 	Use: "build",
@@ -61,16 +67,12 @@ var buildCmd = &cobra.Command{
 			return
 		}
 
+		defer shutdown(c)
+	
 		err = c.Build(forceBuild)
 
 		if (err != nil) {
 			log.Fatal(err)
-		}
-
-		err = c.Shutdown()
-
-		if (err != nil) {
-			log.Fatalf("failed to shutdown: %v", err)
 		}
 	},
 }
