@@ -91,7 +91,6 @@ func init() {
 	flags.BoolVar(&saveConfig, "save-config", false, "allows you to save all passed CLI flags to config file")
 }
 
-
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy or update the AWS infrastructure used for building RattlesnakeOS",
@@ -169,9 +168,13 @@ var deployCmd = &cobra.Command{
 			Uid: 					u.Uid,
 			Gid:					u.Gid,
 		})
+
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		defer shutdown(s)
+
 		if err := s.Apply(); err != nil {
 			log.Fatal(err)
 		}
