@@ -171,11 +171,7 @@ func (s *DockerStack) Shutdown() error {
 		log.Warnf("warning: failed to stop container on shutdown: %v", err)
 	}
 
-	err = s.podmanProc.Process.Kill()
-
-	if (err != nil) {
-		return fmt.Errorf("failed to signal podman process: %v", err)
-	}
+	_ = s.podmanProc.Process.Kill()
 
 	_ = s.podmanProc.Wait()
 
