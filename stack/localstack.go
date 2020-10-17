@@ -177,11 +177,7 @@ func (s *DockerStack) Shutdown() error {
 		return fmt.Errorf("failed to signal podman process: %v", err)
 	}
 
-	err = s.podmanProc.Wait()
-
-	if (err != nil) {
-		return fmt.Errorf("failed to wait for podman process: %v", err)
-	}
+	_ = s.podmanProc.Wait()
 
 	return nil
 }
