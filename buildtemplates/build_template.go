@@ -93,7 +93,6 @@ SECONDS=0
 BUILD_TARGET="release aosp_${DEVICE} ${BUILD_TYPE}"
 RELEASE_URL="https://ota.ballmerlabs.net" #TODO: template this
 RELEASE_CHANNEL="${DEVICE}-${BUILD_CHANNEL}"
-CHROME_CHANNEL="stable"
 BUILD_DATE=$(date +%Y.%m.%d.%H)
 BUILD_TIMESTAMP=$(date +%s)
 BUILD_DIR="/build/build"
@@ -106,7 +105,6 @@ BUILD_REASON=""
 MANIFEST_URL="https://android.googlesource.com/platform/manifest"
 STACK_URL_LATEST="https://api.github.com/repos/dan-v/rattlesnakeos-stack/releases/latest"
 RATTLESNAKEOS_LATEST_JSON="https://raw.githubusercontent.com/RattlesnakeOS/latest/${ANDROID_VERSION}/latest.json"
-CHROME_URL_LATEST="https://omahaproxy.appspot.com/all.json"
 KERNEL_SOURCE_URL="https://android.googlesource.com/kernel/msm"
 AOSP_URL_BUILD="https://developers.google.com/android/images"
 AOSP_URL_PLATFORM_BUILD="https://android.googlesource.com/platform/build"
@@ -150,7 +148,7 @@ get_latest_versions() {
   curl --fail -s "${RATTLESNAKEOS_LATEST_JSON}" > "${HOME}/latest.json"
 
   # check for latest chromium version
-  LATEST_CHROMIUM=$(curl --fail -s "$CHROME_URL_LATEST" | jq -r '.[] | select(.os == "android") | .versions[] | select(.channel == "'$CHROME_CHANNEL'") | .current_version')
+  LATEST_CHROMIUM=$(jq -r '.chromium' "${HOME}/latest.json")
   if [ -z "${LATEST_CHROMIUM}" ]; then
     aws_notify_simple "ERROR: Unable to get latest Chromium version details. Stopping build."
     exit 1
@@ -402,7 +400,7 @@ build_chromium() {
   # run gclient sync (runhooks will run as part of this)
   log "Running gclient sync (this takes a while)"
   for i in {1..5}; do
-    yes | gclient sync --with_branch_heads --jobs 4 -RDf && break
+    yes | gclient sync --with_branch_heads --jobs 32 -RDf && break
   done
 
   # cleanup any files in tree not part of this revision
@@ -518,7 +516,7 @@ aosp_repo_sync() {
   # sync with retries
   for i in {1..10}; do
     log "aosp repo sync attempt ${i}/10"
-    repo sync -c --no-tags --no-clone-bundle --force-sync --jobs 2 && break
+    repo sync -c --no-tags --no-clone-bundle --force-sync --jobs 32 && break
   done
   repo forall -vc "git reset --hard"
   repo forall -vc "git clean -f -d"
